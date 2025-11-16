@@ -4,7 +4,7 @@ export default function Hospitals() {
   const [map, setMap] = useState(null);
   const [error, setError] = useState("");
 
-  const apiKey = ""; 
+  const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
 
   const loadMapsScript = (callback) => {
     if (document.getElementById("google-maps-script")) {
