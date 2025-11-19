@@ -84,11 +84,12 @@
 .header {
   flex: 1;                        /* take available space */
   text-align: center;              /* center text horizontally */
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-family: 'Oleo Script', cursive;
   color: #ff6b81;
   font-weight: bold;
-  letter-spacing: 1px;
+  padding-top: 0.5rem;
+  
   margin: 0;                       /* remove margin-left */
 }
 .global-icons a:hover {
