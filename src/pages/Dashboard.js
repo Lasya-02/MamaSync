@@ -1,385 +1,414 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import "./css/Dashboard.css";
+
+const API = "http://127.0.0.1:8000";
 
 export default function Dashboard() {
-  const [waterIntake, setWaterIntake] = useState(5);
-  const [currentMood, setCurrentMood] = useState('happy');
-  const [tasksCompleted, setTasksCompleted] = useState([false, false, false, false]);
+  const userId = "sharmaanugya05"; // temporary
+  const today = new Date().toISOString().split("T")[0];
 
-  const waterGoal = 8;
-  const waterPercentage = (waterIntake / waterGoal) * 100;
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentMood, setCurrentMood] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [waterIntake, setWaterIntake] = useState(5);
+
+  // Default preset tasks
+  const defaultTasks = [
+    { emoji: "💧", title: "Drink 8 glasses of water", time: "All day", isPreset: true },
+    { emoji: "🍎", title: "Eat healthy breakfast", time: "8:00 AM", isPreset: true },
+    { emoji: "🧘‍♀️", title: "Prenatal yoga stretch", time: "12:00 PM", isPreset: true },
+    { emoji: "💊", title: "Take prenatal vitamin", time: "9:00 PM", isPreset: true }
+  ];
 
   const moods = [
-    { emoji: '😊', label: 'Happy', value: 'happy' },
-    { emoji: '😌', label: 'Calm', value: 'calm' },
-    { emoji: '😴', label: 'Tired', value: 'tired' },
-    { emoji: '😰', label: 'Anxious', value: 'anxious' },
-    { emoji: '🤢', label: 'Unwell', value: 'unwell' }
+    { emoji: "😊", label: "Happy", value: "happy" },
+    { emoji: "😌", label: "Calm", value: "calm" },
+    { emoji: "😴", label: "Tired", value: "tired" },
+    { emoji: "😰", label: "Anxious", value: "anxious" },
+    { emoji: "🤢", label: "Unwell", value: "unwell" }
   ];
 
-  const todayTasks = [
-    { id: 0, emoji: '💧', title: 'Drink 8 glasses of water', time: 'All day' },
-    { id: 1, emoji: '🍎', title: 'Eat healthy breakfast', time: '8:00 AM' },
-    { id: 2, emoji: '🧘‍♀️', title: 'Prenatal yoga stretch', time: '12:00 PM' },
-    { id: 3, emoji: '💊', title: 'Take prenatal vitamin', time: '9:00 PM' }
-  ];
-
-  const upcomingAppointments = [
-    { date: 'Nov 12', time: '10:30 AM', type: 'OB-GYN Checkup', doctor: 'Dr. Sarah Johnson' },
-    { date: 'Nov 20', time: '2:00 PM', type: 'Ultrasound Scan', doctor: 'Radiology Dept' }
-  ];
-
-  const weeklyStreak = [
-    { day: 'Mon', completed: true },
-    { day: 'Tue', completed: true },
-    { day: 'Wed', completed: true },
-    { day: 'Thu', completed: true },
-    { day: 'Fri', completed: false },
-    { day: 'Sat', completed: false },
-    { day: 'Sun', completed: false }
-  ];
-
-  const toggleTask = (id) => {
-    const newTasks = [...tasksCompleted];
-    newTasks[id] = !newTasks[id];
-    setTasksCompleted(newTasks);
+  // ----------------------------------------------------------------
+  // LOAD TASKS
+  // ----------------------------------------------------------------
+  const loadTasks = async () => {
+    try {
+      const res = await axios.get(`${API}/tasks`, {
+        params: { userId, date: today },
+      });
+      
+      const existingTasks = res.data.tasks || [];
+      
+      if (existingTasks.length === 0) {
+        await initializeDefaultTasks();
+      } else {
+        setTasks(existingTasks);
+      }
+    } catch (e) {
+      console.error("Error loading tasks:", e);
+      setTasks(defaultTasks.map((t, i) => ({ ...t, id: i, completed: false })));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const completedCount = tasksCompleted.filter(Boolean).length;
-  const completionPercentage = (completedCount / todayTasks.length) * 100;
+  // ----------------------------------------------------------------
+  // INITIALIZE DEFAULT TASKS
+  // ----------------------------------------------------------------
+  const initializeDefaultTasks = async () => {
+    try {
+      const promises = defaultTasks.map(task =>
+        axios.post(`${API}/tasks`, {
+          userId,
+          date: today,
+          emoji: task.emoji,
+          title: task.title,
+          time: task.time,
+          completed: false,
+          isPreset: true,
+        })
+      );
+      
+      await Promise.all(promises);
+      await loadTasks();
+    } catch (e) {
+      console.error("Error initializing default tasks:", e);
+    }
+  };
 
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  // ----------------------------------------------------------------
+  // ADD CUSTOM TASK
+  // ----------------------------------------------------------------
+  const openAddModal = () => {
+    setShowAddModal(true);
+    setNewTaskTitle("");
+  };
+
+  const handleAddTask = async () => {
+    if (!newTaskTitle || !newTaskTitle.trim()) {
+      alert("Please enter a task title!");
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/tasks`, {
+        userId,
+        date: today,
+        emoji: "📝",
+        title: newTaskTitle.trim(),
+        time: "Anytime",
+        completed: false,
+        isPreset: false,
+      });
+
+      setShowAddModal(false);
+      setNewTaskTitle("");
+      loadTasks();
+    } catch (e) {
+      console.error("Add task error:", e);
+      alert("Failed to add task. Please try again.");
+    }
+  };
+
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setNewTaskTitle("");
+  };
+
+  // ----------------------------------------------------------------
+  // TOGGLE COMPLETE
+  // ----------------------------------------------------------------
+  const toggleComplete = async (task) => {
+    try {
+      await axios.patch(
+        `${API}/tasks/${task.id}`,
+        { completed: !task.completed },
+        { params: { userId, date: today } }
+      );
+
+      loadTasks();
+    } catch (e) {
+      console.error("Toggle complete error:", e);
+    }
+  };
+
+  // ----------------------------------------------------------------
+  // DELETE A TASK
+  // ----------------------------------------------------------------
+  const openDeleteModal = (task) => {
+    setTaskToDelete(task);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!taskToDelete) return;
+
+    try {
+      await axios.delete(`${API}/tasks/${taskToDelete.id}`, {
+        params: { userId, date: today },
+      });
+
+      setShowDeleteModal(false);
+      setTaskToDelete(null);
+      loadTasks();
+    } catch (e) {
+      console.error("Delete error:", e);
+      alert("Failed to delete task. Please try again.");
+    }
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setTaskToDelete(null);
+  };
+
+  // ----------------------------------------------------------------
+  // HANDLE MOOD SELECTION
+  // ----------------------------------------------------------------
+  const handleMoodSelect = (moodValue) => {
+    setCurrentMood(moodValue);
+  };
+
+  // ----------------------------------------------------------------
+  // WATER INTAKE HANDLERS
+  // ----------------------------------------------------------------
+  const increaseWater = () => {
+    if (waterIntake < 8) {
+      setWaterIntake(waterIntake + 1);
+    }
+  };
+
+  const decreaseWater = () => {
+    if (waterIntake > 0) {
+      setWaterIntake(waterIntake - 1);
+    }
+  };
+
+  // ----------------------------------------------------------------
+  // COUNTS
+  // ----------------------------------------------------------------
+  const completedCount = tasks.filter((t) => t.completed).length;
+  const completionPercentage = tasks.length === 0 ? 0 : (completedCount / tasks.length) * 100;
+  const waterPercentage = (waterIntake / 8) * 100;
+
+  // ----------------------------------------------------------------
+  // UI RETURN
+  // ----------------------------------------------------------------
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #fce7f3 0%, #fef3c7 50%, #ddd6fe 100%)',
-      padding: '24px'
-    }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        
-        {/* Header */}
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
-             Welcome Mama!
-          </h1>
-        </div>
-
-        {/* Stats Overview */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-          gap: '16px', 
-          marginBottom: '24px' 
-        }}>
-          {/* Water Intake */}
-          <div style={{ 
-            background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)', 
-            borderRadius: '16px', 
-            padding: '20px',
-            color: 'white',
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-          }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>💧</div>
-            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '4px' }}>Water Intake</div>
-            <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{waterIntake}/{waterGoal}</div>
-            <div style={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              borderRadius: '8px', 
-              height: '6px', 
-              marginTop: '8px',
-              overflow: 'hidden'
-            }}>
-              <div style={{ 
-                background: 'white', 
-                height: '100%', 
-                width: `${waterPercentage}%`,
-                transition: 'width 0.3s'
-              }} />
+    <div className="dashboard-wrapper">
+      {/* ---------------------------------------------------------------- */}
+      {/* CUSTOM ADD TASK MODAL */}
+      {/* ---------------------------------------------------------------- */}
+      {showAddModal && (
+        <div className="modal-overlay" onClick={closeAddModal}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-icon">✨</div>
+              <h2 className="modal-title">Add New Task</h2>
+              <p className="modal-subtitle">What would you like to accomplish today?</p>
             </div>
-          </div>
-
-          {/* Tasks Progress */}
-          <div style={{ 
-            background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)', 
-            borderRadius: '16px', 
-            padding: '20px',
-            color: 'white',
-            boxShadow: '0 4px 12px rgba(236, 72, 153, 0.3)'
-          }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
-            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '4px' }}>Daily Tasks</div>
-            <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{completedCount}/{todayTasks.length}</div>
-            <div style={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              borderRadius: '8px', 
-              height: '6px', 
-              marginTop: '8px',
-              overflow: 'hidden'
-            }}>
-              <div style={{ 
-                background: 'white', 
-                height: '100%', 
-                width: `${completionPercentage}%`,
-                transition: 'width 0.3s'
-              }} />
-            </div>
-          </div>
-
-          {/* Weekly Streak */}
-          {/* <div style={{ 
-            background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)', 
-            borderRadius: '16px', 
-            padding: '20px',
-            color: 'white',
-            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
-          }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔥</div>
-            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '4px' }}>Weekly Streak</div>
-            <div style={{ fontSize: '28px', fontWeight: 'bold' }}>4 Days</div>
-            <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
-              {weeklyStreak.map((day, idx) => (
-                <div key={idx} style={{ 
-                  width: '100%', 
-                  height: '6px', 
-                  background: day.completed ? 'white' : 'rgba(255,255,255,0.2)',
-                  borderRadius: '3px'
-                }} />
-              ))}
-            </div>
-          </div> */}
-
-          {/* Baby Growth */}
-          {/* <div style={{ 
-            background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)', 
-            borderRadius: '16px', 
-            padding: '20px',
-            color: 'white',
-            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-          }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>👶</div>
-            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '4px' }}>Baby Size</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>Corn 🌽</div>
-            <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '4px' }}>~30cm, 600g</div>
-          </div> */}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-          
-          {/* Left Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
-            {/* Today's Tasks */}
-            <div style={{ 
-              background: 'white', 
-              borderRadius: '20px', 
-              padding: '24px',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937' }}>📝 Today's Tasks</h2>
-                <span style={{ 
-                  background: '#fef3c7', 
-                  color: '#92400e', 
-                  padding: '4px 12px', 
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '600'
-                }}>
-                  {completedCount} of {todayTasks.length}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {todayTasks.map((task) => (
-                  <div 
-                    key={task.id}
-                    onClick={() => toggleTask(task.id)}
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '12px',
-                      padding: '16px',
-                      background: tasksCompleted[task.id] ? '#f0fdf4' : '#f9fafb',
-                      borderRadius: '12px',
-                      border: `2px solid ${tasksCompleted[task.id] ? '#86efac' : '#e5e7eb'}`,
-                      cursor: 'pointer',
-                      transition: 'all 0.3s'
-                    }}
-                  >
-                    <div style={{ 
-                      width: '24px', 
-                      height: '24px', 
-                      borderRadius: '50%',
-                      border: `2px solid ${tasksCompleted[task.id] ? '#10b981' : '#d1d5db'}`,
-                      background: tasksCompleted[task.id] ? '#10b981' : 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      {tasksCompleted[task.id] && (
-                        <span style={{ color: 'white', fontSize: '14px' }}>✓</span>
-                      )}
-                    </div>
-                    <span style={{ fontSize: '24px', flexShrink: 0 }}>{task.emoji}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        fontWeight: '600', 
-                        color: '#1f2937',
-                        textDecoration: tasksCompleted[task.id] ? 'line-through' : 'none',
-                        opacity: tasksCompleted[task.id] ? 0.6 : 1
-                      }}>
-                        {task.title}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>{task.time}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="modal-body">
+              <input
+                type="text"
+                className="modal-input"
+                placeholder="e.g., Read a pregnancy book"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+                autoFocus
+              />
             </div>
-
-            {/* Hydration Tracker */}
-            <div style={{ 
-              background: 'white', 
-              borderRadius: '20px', 
-              padding: '24px',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
-            }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '20px' }}>
-                💧 Hydration Tracker
-              </h2>
-              
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                {[...Array(8)].map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setWaterIntake(idx + 1)}
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      background: idx < waterIntake ? 'linear-gradient(135deg, #3b82f6, #06b6d4)' : '#f3f4f6',
-                      cursor: 'pointer',
-                      fontSize: '20px',
-                      transition: 'all 0.3s',
-                      boxShadow: idx < waterIntake ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none'
-                    }}
-                  >
-                    💧
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                fontSize: '14px',
-                color: '#6b7280'
-              }}>
-                <span>{waterIntake} glasses</span>
-                <span>Goal: {waterGoal} glasses</span>
-              </div>
-            </div>
-
-            {/* Mood Check-in */}
-            <div style={{ 
-              background: 'white', 
-              borderRadius: '20px', 
-              padding: '24px',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
-            }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '20px' }}>
-                😊 How are you feeling today?
-              </h2>
-              
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {moods.map((mood) => (
-                  <button
-                    key={mood.value}
-                    onClick={() => setCurrentMood(mood.value)}
-                    style={{
-                      padding: '12px 16px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      background: currentMood === mood.value ? '#fef3c7' : '#f9fafb',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '4px',
-                      boxShadow: currentMood === mood.value ? '0 2px 8px rgba(251, 191, 36, 0.3)' : 'none'
-                    }}
-                  >
-                    <span style={{ fontSize: '32px' }}>{mood.emoji}</span>
-                    <span style={{ 
-                      fontSize: '12px', 
-                      fontWeight: currentMood === mood.value ? '600' : '400',
-                      color: currentMood === mood.value ? '#92400e' : '#6b7280'
-                    }}>
-                      {mood.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
+            
+            <div className="modal-footer">
+              <button className="modal-btn cancel-btn" onClick={closeAddModal}>
+                Cancel
+              </button>
+              <button className="modal-btn confirm-btn" onClick={handleAddTask}>
+                Add Task
+              </button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Right Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            
-            {/* Quick Tips */}
-            <div style={{ 
-              background: 'linear-gradient(135deg, #ddd6fe 0%, #c7d2fe 100%)', 
-              borderRadius: '20px', 
-              padding: '24px',
-              border: '2px solid #a78bfa',
-              boxShadow: '0 4px 16px rgba(167, 139, 250, 0.2)'
-            }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#4c1d95', marginBottom: '12px' }}>
-                💡 Tip of the Day
-              </h2>
-              <p style={{ color: '#5b21b6', fontSize: '14px', lineHeight: '1.6' }}>
-                At 24 weeks, your baby can hear sounds from outside! Try reading, singing, or playing gentle music. 
-                This is a wonderful way to bond with your little one. 🎵
+      {/* ---------------------------------------------------------------- */}
+      {/* CUSTOM DELETE CONFIRMATION MODAL */}
+      {/* ---------------------------------------------------------------- */}
+      {showDeleteModal && taskToDelete && (
+        <div className="modal-overlay" onClick={closeDeleteModal}>
+          <div className="modal-container delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header delete-header">
+              <div className="modal-icon">🗑️</div>
+              <h2 className="modal-title">Delete Task?</h2>
+              <p className="modal-subtitle">
+                {taskToDelete.isPreset 
+                  ? "This is a preset task. Are you sure you want to delete it?"
+                  : "Are you sure you want to delete this task?"}
               </p>
             </div>
-
-            {/* Inspirational Quote */}
-            <div style={{ 
-              background: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)', 
-              borderRadius: '20px', 
-              padding: '24px',
-              border: '2px solid #f9a8d4',
-              boxShadow: '0 4px 16px rgba(236, 72, 153, 0.2)'
-            }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#831843', marginBottom: '12px' }}>
-                💝 Daily Affirmation
-              </h2>
-              <p style={{ color: '#9f1239', fontSize: '16px', lineHeight: '1.6', fontStyle: 'italic' }}>
-                "I am strong, capable, and creating life. Every day my body does amazing things for my baby."
-              </p>
-            </div>
-
-            {/* Health Reminder */}
-            <div style={{ 
-              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', 
-              borderRadius: '20px', 
-              padding: '24px',
-              border: '2px solid #6ee7b7',
-              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.2)'
-            }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#065f46', marginBottom: '12px' }}>
-                🌿 Health Reminder
-              </h2>
-              <div style={{ color: '#047857', fontSize: '14px', lineHeight: '1.6' }}>
-                <p style={{ marginBottom: '8px' }}>✓ Take your prenatal vitamin with food</p>
-                <p style={{ marginBottom: '8px' }}>✓ Gentle walking for 20-30 minutes</p>
-                <p style={{ marginBottom: '8px' }}>✓ Sleep on your left side for better circulation</p>
-                <p>✓ Practice deep breathing exercises</p>
+            
+            <div className="modal-body">
+              <div className="delete-task-preview">
+                <div className="task-emoji">{taskToDelete.emoji}</div>
+                <div>
+                  <div className="delete-task-title">{taskToDelete.title}</div>
+                  <div className="delete-task-time">{taskToDelete.time}</div>
+                </div>
               </div>
+            </div>
+            
+            <div className="modal-footer">
+              <button className="modal-btn cancel-btn" onClick={closeDeleteModal}>
+                Cancel
+              </button>
+              <button className="modal-btn delete-btn" onClick={confirmDelete}>
+                Delete
+              </button>
             </div>
           </div>
         </div>
+      )}
+
+      <div className="welcome-header">
+        <h1>Welcome Mama!</h1>
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/*  TOP STATS CARDS (Water + Daily Tasks) */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="top-cards">
+        {/* Water Intake */}
+        <div className="card water-card">
+          <span className="water-label">Water Intake</span>
+          <div className="water-value">{waterIntake}/8</div>
+          <div className="water-bar">
+            <div className="water-fill" style={{ width: `${waterPercentage}%` }}></div>
+          </div>
+          <div className="water-controls">
+            <button className="water-btn" onClick={decreaseWater}>−</button>
+            <button className="water-btn" onClick={increaseWater}>+</button>
+          </div>
+        </div>
+
+        {/* Daily Tasks */}
+        <div className="card tasks-card">
+          <span className="tasks-label">Daily Tasks</span>
+          <div className="tasks-value">
+            {completedCount}/{tasks.length}
+          </div>
+          <div className="tasks-bar">
+            <div
+              className="tasks-fill"
+              style={{ width: `${completionPercentage}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* TODAY'S TASK LIST */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="section-card tasks-section">
+        <div className="section-header">
+          <h3>📅 Today's Tasks</h3>
+          <button className="add-btn" onClick={openAddModal}>
+            + Add
+          </button>
+        </div>
+
+        {loading ? (
+          <p>Loading…</p>
+        ) : tasks.length === 0 ? (
+          <p>No tasks added yet.</p>
+        ) : (
+          <div className="tasks-list">
+            {tasks.map((task) => (
+              <div 
+                className={`task-item ${task.completed ? 'completed' : ''}`}
+                key={task.id}
+              >
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  onChange={() => toggleComplete(task)}
+                />
+
+                <div className="task-emoji">{task.emoji}</div>
+
+                <div className="task-details">
+                  <div className="task-title">{task.title}</div>
+                  <div className="task-time">{task.time}</div>
+                </div>
+
+                <button
+                  className="delete-btn"
+                  onClick={() => openDeleteModal(task)}
+                  title="Delete task"
+                >
+                  🗑️
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* FEELINGS CHECK-IN */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="feelings-card">
+        <h3>😊 How are you feeling today?</h3>
+        <div className="feelings-row">
+          {moods.map((mood) => (
+            <button
+              key={mood.value}
+              className={`mood-btn ${currentMood === mood.value ? 'selected' : ''}`}
+              onClick={() => handleMoodSelect(mood.value)}
+            >
+              <div className="mood-emoji">{mood.emoji}</div>
+              <div className="mood-label">{mood.label}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* ADDITIONAL INFO CARDS */}
+      {/* ---------------------------------------------------------------- */}
+
+      <div className="tip-card">
+        <h3>💡 Tip of the Day</h3>
+        <p>
+          At 24 weeks, your baby can hear sounds from outside! Try reading,
+          singing, or playing gentle music.
+        </p>
+      </div>
+
+      <div className="affirm-card">
+        <h3>💖 Daily Affirmation</h3>
+        <p>
+          "I am strong, capable, and creating life. Every day my body does
+          amazing things for my baby."
+        </p>
+      </div>
+
+      <div className="health-card">
+        <h3>🌿 Health Reminder</h3>
+        <ul>
+          <li>Take your prenatal vitamin</li>
+          <li>Gentle walking for 20–30 min</li>
+          <li>Sleep on your left side</li>
+        </ul>
       </div>
     </div>
   );
