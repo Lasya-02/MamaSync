@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+//react
+import { useLocation } from 'react-router-dom';
+//useParams
 import './css/CommunityForum.css';
 
 export default function ForumDetail() {
-  const { id } = useParams();
+  //const { id } = useParams();
   const location = useLocation();
   const post = location.state; // post object passed from forum list
 
