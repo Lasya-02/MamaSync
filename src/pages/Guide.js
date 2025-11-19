@@ -139,7 +139,7 @@ export default function Guide() {
         }}>
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
-              💼 Working While Pregnant
+               Working While Pregnant
             </h2>
             <p style={{ color: '#6b7280' }}>Balance your career and pregnancy</p>
           </div>
