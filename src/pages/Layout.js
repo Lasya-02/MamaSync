@@ -32,7 +32,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="dashboard-main">
         <header className="dashboard-header">
-          <h1 className="header">MAMASYNC</h1>
+          <h1 className="header">MamaSync</h1>
           <div className="global-icons">
             <Link to="/profile" title="Profile">
               <i className="bi bi-person-circle"></i>
