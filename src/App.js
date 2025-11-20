@@ -7,6 +7,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import Reminder from './pages/Reminder';
 import Guide from './pages/Guide';
 import Community from './pages/CommunityForum';
+import ForumDetail from './pages/ForumDetail';
 import Hospitals from './pages/NearbyHospitals';
 import Profile from './pages/AccountProfile';
 import SOS from './pages/Sos';
@@ -26,6 +27,7 @@ function App() {
           <Route path="/reminder" element={<Reminder />} />
           <Route path="/guide" element={<Guide />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/forum/:id" element={<ForumDetail />} />
           <Route path="/hospitals" element={<Hospitals />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/sos" element={<SOS />} />
