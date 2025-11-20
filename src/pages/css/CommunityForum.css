@@ -1,0 +1,136 @@
+/* Reset defaults and apply dark background everywhere */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(20, 19, 20, 0.95),   /* dark gray with 95% opacity */
+    rgba(4, 5, 5, 0.95)       /* near black with 95% opacity */
+  );
+  color: #faf8f9;
+  font-family: Arial, sans-serif;
+  overflow-x: hidden; /* prevent horizontal scrollbars */
+}
+
+/* Forum page layout */
+.forum-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+/* Forum container */
+.forum-box {
+  background: #0d0d0d; /* solid dark background */
+  border-radius: 1.5rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 900px;
+  color: #ff6b81;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* Scrollable list of discussion cards */
+.forum-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Card styling */
+.forum-card {
+  background-color: #1a1a1a;
+  border-radius: 1rem;
+  padding: 1rem;
+  color: #faf8f9;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.forum-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(255,107,129,0.25);
+}
+
+.forum-author {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-bottom: 0.5rem;
+}
+
+/* Replies section */
+.replies-scroll {
+  margin-top: 1rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.reply {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #eee;
+  padding: 0.5rem;
+  border-left: 2px solid #ff6b81;
+}
+
+/* Nested reply button */
+.small-reply-button {
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 0.3rem;
+  background: #ff6b81;
+  color: white;
+  cursor: pointer;
+}
+
+.small-reply-button:hover {
+  background: #ff8aa2;
+}
+
+/* Reply form */
+.reply-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.reply-form input {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 0.5rem;
+  border: 1.5px solid #444;
+  background-color: #1a1a1a;
+  color: #faf8f9;
+}
+
+.reply-form button {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #ff8aa2, #ff6b81);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.replying-to {
+  font-size: 0.8rem;
+  color: #ff8aa2;
+  margin-bottom: 0.3rem;
+}
+
+/* Responsive layout */
+@media (max-width: 768px) {
+  .forum-box {
+    padding: 1.5rem;
+  }
+}
