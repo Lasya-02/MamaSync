@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException,status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+# from flask import request
 from pydantic import BaseModel,EmailStr
 from typing import Optional
 from pymongo import MongoClient
@@ -10,6 +11,9 @@ import uvicorn
 from userrepository import user_repository
 from datetime import date, time
 from dailytaskrepository import dailytask_repository
+import jwt
+from datetime import datetime, timedelta, timezone
+
 
 app = FastAPI()
 
@@ -22,11 +26,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+JWT_SECRET_KEY="f9bf78b9a18ce6d46a0cd2b0b86df9da2c4a9e3f1a5b8d2c4e3f1a5b8d2c4a9e" # Use a long, random string
+
+SECRET_KEY = JWT_SECRET_KEY #os.environ.get("JWT_SECRET_KEY")
+ALGORITHM = "HS256"
+
+# ---- MongoDB connection ----
 client = MongoClient(
     "mongodb+srv://lasya-02:lasya-02@mamasync.hqy4yen.mongodb.net/"
 )
 db = client["mamasync"]
-tasks_collection = db["daily_tasks"]  
+tasks_collection = db["daily_tasks"]      # 👈 ONE collection we use
 
 # ---------- MODELS ----------
 class TaskCreate(BaseModel):
@@ -78,13 +88,31 @@ def find_doc(user_id: str, date: str):
     return tasks_collection.find_one({"userId": user_id, "date": date})
 
 
+def create_access_token(user_id: int):
+    """Generates a JWT token that expires in 30 minutes."""
+    to_encode = {"user_id": user_id}
+    expire = datetime.now(timezone.utc) + timedelta(minutes=30)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_token(token: str):
+    """Verifies a JWT token and returns the payload if valid."""
+    try:
+        decoded_payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return decoded_payload
+    except jwt.ExpiredSignatureError:
+        return None  # Token is expired
+    except jwt.InvalidTokenError:
+        return None  # Token is invalid
+
 # ---------- ROUTES ----------
 
 @app.post("/login",status_code=status.HTTP_200_OK)
 def login_for_access_token(user_data: UserLogin):
 
     user_in_db = user_repository.find_by_email(user_data.email)
-    print(user_in_db)
+    #print(user_in_db)
     if not user_in_db:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -99,7 +127,9 @@ def login_for_access_token(user_data: UserLogin):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return user_in_db
+    token = create_access_token(user_in_db["_id"])
+
+    return {"token":token,"user":user_in_db}
 
     #return JSONResponse(
     #    status_code=status.HTTP_200_OK,
@@ -124,7 +154,7 @@ def get_userbyid(id):
 @app.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(user_data: UserRegistration):
 
-    print(user_data)
+    #print(user_data)
     # Convert Pydantic model to a dictionary for PyMongo
     user_dict = user_data.model_dump()
     
@@ -145,7 +175,6 @@ def register_user(user_data: UserRegistration):
 @app.put("/updateprofile", status_code=status.HTTP_200_OK)
 def update_user(user_data: UserRegistration):
 
-    print(user_data)
     # Convert Pydantic model to a dictionary for PyMongo
     user_dict = user_data.model_dump()
     
@@ -162,6 +191,29 @@ def update_user(user_data: UserRegistration):
     
     # Return a success message and the new user ID
     return {"message": "User updated successfully", "user_id": user_id, "email": user_dict['email']}
+
+#@app.get("/tasks")
+#def get_tasks(userId: str, date: str):
+#    """
+#    Get all tasks for a user for a given date.
+#    ONE document per (userId, date) with tasks array.
+#    """
+#    auth_header = request.headers.get("Authorization")
+#    if not auth_header:
+#        return {"msg": "Missing Authorization Header"}, 401
+#    
+#    # Extract the token part after "Bearer "
+#    token = auth_header.split("Bearer ")[1] if len(auth_header.split("Bearer ")) > 1 else None
+#
+#    if token:
+#        user_info = verify_token(token)
+#        if user_info:
+#            #return {"message": f"Hello User {user_info['user_id']}! This is protected data."}, 200
+#            return dailytask_repository.find_by_id_date(userId,date)
+#
+#    return {"msg": "Invalid or expired token"}, 401
+
+
 
 @app.get("/tasks")
 def get_tasks(userId: str, date: str):

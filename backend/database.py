@@ -13,7 +13,7 @@ import os
 #user_details = db["user"]
 
 # Get connection details from environment variables or use local defaults
-MONGO_HOST = os.environ.get('MONGO_HOST', "mongodb+srv://lasya-02:lasya-02@mamasync.hqy4yen.mongodb.net/")
+MONGO_HOST = os.environ.get('MONGO_HOST', 'mongodb+srv://lasya-02:lasya-02@mamasync.hqy4yen.mongodb.net/')
 MONGO_PORT = int(os.environ.get('MONGO_PORT', 27017))
 MONGO_DB = os.environ.get('MONGO_DB', 'mamasync')
 
