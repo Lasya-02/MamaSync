@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './css/Register.css';
 import './css/Shared.css';
+import axios from 'axios';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -43,7 +44,7 @@ export default function Register() {
     return strongRegex.test(pwd);
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setFormError('');
 
@@ -76,9 +77,33 @@ export default function Register() {
       return;
     }
 
-    // TODO: send data to backend
-    navigate('/dashboard');
-  };
+   try {
+
+        const response = await axios.post(
+          'http://127.0.0.1:8000/register', // Replace with your backend URL
+          {
+            "email": email,
+            "name": name,
+            "password": password,
+            "pregnancyMonth": pregnancyMonth,
+            "working": working,
+            "workHours": workHours,
+            "wakeTime": wakeTime,
+            "sleepTime": sleepTime,
+            "mealTime": mealTime,
+            "emergencyContact": emergencyContact,
+            "dueDate": dueDate,
+            "height": height,
+            "weight": weight
+          }        
+        );
+
+   
+       navigate("/");
+      } catch (err) {
+        setFormError(err.response?.data?.message || 'Registration failed. Please try again.');
+      }  
+    };
 
   return (
     <div className="register-page">

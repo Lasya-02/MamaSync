@@ -1,13 +1,19 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./css/Register.css";
 import "./css/Shared.css";
+import axios from "axios";
+
+import { useAuth } from '../contexts/AuthContext'; 
 
 export default function AccountProfile() {
-  const navigate = useNavigate();
 
+    const { logout } = useAuth(); 
+  
+  const navigate = useNavigate();
   // Temporary state (no localStorage)
   const [profile, setProfile] = useState({
+    _id:"",
     name: "",
     email: "",
     pregnancyMonth: "",
@@ -22,13 +28,23 @@ export default function AccountProfile() {
     weight: "",
   });
 
+   useEffect(() => {
+
+    const storedDataString = sessionStorage.getItem('userdata'); 
+
+    if (storedDataString) {
+      const parsedData = JSON.parse(storedDataString);
+      setProfile(parsedData); 
+    }
+  }, []); 
+
   const [error, setError] = useState("");
 
   const handleChange = (field, value) => {
     setProfile({ ...profile, [field]: value });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -45,13 +61,34 @@ export default function AccountProfile() {
       setError("Weight must be between 30 and 200 kg.");
       return;
     }
+     try {
 
-    alert("Profile updated successfully! (Temporary – not stored)");
+        const response = await axios.put(
+          'http://127.0.0.1:8000/updateprofile', // Replace with your backend URL
+          profile
+        );
+
+        alert("Profile updated successfully!");
+        
+        const updateddata = await axios.get(
+          'http://127.0.0.1:8000/user/'+profile['_id'], // Replace with your backend URL
+          profile
+        );     
+
+        if(updateddata){
+          sessionStorage.setItem("userdata",JSON.stringify(updateddata.data))
+        }
+
+      } catch (err) {
+        alert("Profile not updated! please try after sometime");
+      }  
   };
 
   const handleSignOut = () => {
-    alert("You have signed out.");
-    navigate("/");
+   // alert("You have signed out.");
+   // navigate("/");
+   logout();
+   navigate("/");
   };
 
   return (
