@@ -30,7 +30,7 @@ export default function AccountProfile() {
 
    useEffect(() => {
 
-    const storedDataString = localStorage.getItem('userdata'); 
+    const storedDataString = sessionStorage.getItem('userdata'); 
 
     if (storedDataString) {
       const parsedData = JSON.parse(storedDataString);
@@ -76,7 +76,7 @@ export default function AccountProfile() {
         );     
 
         if(updateddata){
-          localStorage.setItem("userdata",JSON.stringify(updateddata.data))
+          sessionStorage.setItem("userdata",JSON.stringify(updateddata.data))
         }
 
       } catch (err) {

@@ -4,36 +4,43 @@ import axios from 'axios';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const token = sessionStorage.getItem('userToken');
+    const userdata = sessionStorage.getItem('userdata');
+    if (token && userdata) {
+      return JSON.parse(userdata);
+    }
+    return null;
+  });
 
   useEffect(() => {
-    const token = localStorage.getItem('userToken');
+    const token = sessionStorage.getItem('userToken');
     if (token) {
-        setUser({ isLoggedIn: true }); // Simplified user object on load
+      setUser({ isLoggedIn: true }); // Simplified user object on load
     }
-    }, []);
+  }, []);
 
-  const login = async (email,password) => {
+  const login = async (email, password) => {
     try {
 
-        const response = await axios.post(
-            'http://127.0.0.1:8000/login', // Replace with your backend URL
-            {"email":email,"password":password}
-          );
-        
-        //headers: {
-        //    Authorization: `Bearer ${token}`,
-        //  }
-        
-        //console.log(response.data)
-        // Assuming your backend returns a JWT token in response.data.token
-        localStorage.setItem('userToken', response.data.token);
+      const response = await axios.post(
+        'http://127.0.0.1:8000/login', // Replace with your backend URL
+        { "email": email, "password": password }
+      );
 
-    
-        localStorage.setItem('userdata', JSON.stringify(response.data.user));
+      //headers: {
+      //    Authorization: `Bearer ${token}`,
+      //  }
 
-        // For this example, we just set a mock user object
-        setUser(response.data.userDetails || { isLoggedIn: true, email }); 
+      //console.log(response.data)
+      // Assuming your backend returns a JWT token in response.data.token
+      sessionStorage.setItem('userToken', response.data.token);
+
+
+      sessionStorage.setItem('userdata', JSON.stringify(response.data.user));
+
+      // For this example, we just set a mock user object
+      setUser(response.data.userDetails || { isLoggedIn: true, email });
 
     } catch (error) {
       console.error("Login failed:", error);
@@ -42,8 +49,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('userToken');
-    setUser(null);    
+    sessionStorage.removeItem('userToken');
+    setUser(null);
     alert("You have signed out.");
   };
 
