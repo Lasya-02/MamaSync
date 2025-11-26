@@ -133,9 +133,9 @@ export default function Hospitals() {
     });
   }, []);
   return (
-    <div className="page-container">
-      <h2>🏥 Nearby Hospitals</h2>
-      <p>Find trusted hospitals and clinics near your location.</p>
+    <div className="page-container" style={{ color: "white" }}>
+      <h2 >🏥 Nearby Hospitals</h2>
+      <p >Find trusted hospitals and clinics near your location.</p>
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <div
