@@ -13,9 +13,14 @@ import Profile from './pages/AccountProfile';
 import SOS from './pages/Sos';
 import Dashboard from './pages/Dashboard';
 
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './pages/ProtectedRoute';
+import NotFoundPage from './pages/NotFoundPage';
+
 function App() {
   return (
     <Router>
+    <AuthProvider>
       <Routes>
         {/* Auth pages */}
         <Route path="/" element={<Login />} />
@@ -23,16 +28,43 @@ function App() {
 
         {/* Dashboard layout with nested pages */}
         <Route element={<Layout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/reminder" element={<Reminder />} />
-          <Route path="/guide" element={<Guide />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/forum/:id" element={<ForumDetail />} />
-          <Route path="/hospitals" element={<Hospitals />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/sos" element={<SOS />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>} />
+          <Route path="/reminder" element={
+            <ProtectedRoute>
+              <Reminder />
+            </ProtectedRoute>} />
+          <Route path="/guide" element={
+             <ProtectedRoute>
+              <Guide />
+            </ProtectedRoute>} />
+          <Route path="/community" element={
+             <ProtectedRoute>
+              <Community />
+            </ProtectedRoute>} />
+          <Route path="/forum/:id" element={
+             <ProtectedRoute>
+              <ForumDetail />
+            </ProtectedRoute>} />
+          <Route path="/hospitals" element={
+             <ProtectedRoute>
+              <Hospitals />
+            </ProtectedRoute>} />
+          <Route path="/profile" element={
+             <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>} />
+          <Route path="/sos" element={
+             <ProtectedRoute>
+              <SOS />
+            </ProtectedRoute>} />
         </Route>
+
+         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+    </AuthProvider>
     </Router>
   );
 }

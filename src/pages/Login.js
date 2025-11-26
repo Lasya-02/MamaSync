@@ -2,15 +2,43 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./css/Login.css";
 import "./css/Shared.css";
+import axios from 'axios';
+
+import { useAuth } from '../contexts/AuthContext'; 
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const [loginerror, setloginError] = useState('');
+
+  const { login } = useAuth(); 
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate("/dashboard");
+   
+      try {
+
+        await login(email, password ); 
+
+      //  const response = await axios.post(
+      //    'http://127.0.0.1:8000/login', // Replace with your backend URL
+      //    {"email":email,"password":password}
+      //  );
+//
+      //  // Assuming your backend returns a JWT token in response.data.token
+      //  const { token } = response.data;
+//
+      //  // Store the token in localStorage
+      //  //localStorage.setItem('userToken', token);
+      //  localStorage.setItem('userdata', JSON.stringify(response.data));
+
+        navigate("/dashboard");
+      } catch (err) {
+        setloginError(err.response?.data?.message || 'Login failed. Invalid credentials.');
+      }
   };
 
   useEffect(() => {
@@ -71,6 +99,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              {loginerror && <p style={{ color: 'red' }}>{loginerror}</p>}
               <button type="submit">Log In</button>
             </form>
             <div className="login-footer">
