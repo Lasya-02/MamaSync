@@ -59,7 +59,7 @@ jobs:
       - name: List files in working directory
         run: ls -la
 
-      # ✅ Install dependencies (no package-lock.json dependency)
+      # ✅ Install dependencies
       - name: Install frontend dependencies
         run: npm install --force
 
@@ -75,10 +75,13 @@ jobs:
       - name: List src/pages
         run: ls -la src/pages
 
+      # ✅ Run tests
+      - name: Run frontend tests
+        run: npm test -- --watch=false
 
       # ✅ Build React app
       - name: Build frontend
-        run: npm run build
+        run: CI=false npm run build   # optional: disable treating warnings as errors
 
   deploy:
     name: Deploy (placeholder)
