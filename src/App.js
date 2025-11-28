@@ -16,6 +16,7 @@ import Dashboard from './pages/Dashboard';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './pages/ProtectedRoute';
 import NotFoundPage from './pages/NotFoundPage';
+import PostDetail from './pages/PostDetail';
 
 function App() {
   return (
@@ -46,7 +47,7 @@ function App() {
             </ProtectedRoute>} />
           <Route path="/forum/:id" element={
              <ProtectedRoute>
-              <ForumDetail />
+              <PostDetail />
             </ProtectedRoute>} />
           <Route path="/hospitals" element={
              <ProtectedRoute>
