@@ -59,29 +59,35 @@ jobs:
       - name: List files in working directory
         run: ls -la
 
-      # ✅ Install dependencies
+      # ✅ Install dependencies using package-lock.json
       - name: Install frontend dependencies
-        run: npm install 
+        run: npm ci
+        working-directory: frontend
 
       # ✅ Debug: Verify react-router-dom is installed
       - name: Check react-router-dom
-        run: npm ls react-router-dom || echo "react-router-dom not found!"
+        run: npm ls react-router-dom || (echo "❌ react-router-dom not found" && exit 1)
+        working-directory: frontend
 
       # ✅ Debug: Show node_modules contents
       - name: Show node_modules
         run: ls -la node_modules | head -20
+        working-directory: frontend
 
       # ✅ Debug: List src/pages to check case sensitivity
       - name: List src/pages
         run: ls -la src/pages
+        working-directory: frontend
 
       # ✅ Run tests
       - name: Run frontend tests
         run: npm test -- --watch=false
+        working-directory: frontend
 
       # ✅ Build React app
       - name: Build frontend
         run: CI=false npm run build   # optional: disable treating warnings as errors
+        working-directory: frontend
 
   deploy:
     name: Deploy (placeholder)
