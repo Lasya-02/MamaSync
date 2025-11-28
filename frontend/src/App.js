@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -7,7 +6,6 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import Reminder from './pages/Reminder';
 import Guide from './pages/Guide';
 import Community from './pages/CommunityForum';
-import ForumDetail from './pages/ForumDetail';
 import Hospitals from './pages/NearbyHospitals';
 import Profile from './pages/AccountProfile';
 import SOS from './pages/Sos';
