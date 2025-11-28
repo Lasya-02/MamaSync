@@ -6,131 +6,58 @@ html, body {
   height: 100%;
   background: linear-gradient(
     135deg,
-    rgba(20, 19, 20, 0.95),   /* dark gray with 95% opacity */
-    rgba(4, 5, 5, 0.95)       /* near black with 95% opacity */
+    rgba(20, 19, 20, 0.95),
+    rgba(4, 5, 5, 0.95)
   );
   color: #faf8f9;
   font-family: Arial, sans-serif;
-  overflow-x: hidden; /* prevent horizontal scrollbars */
+  overflow-x: hidden;
 }
 
-/* Forum page layout */
-.forum-page {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 2rem;
-  box-sizing: border-box;
+/* Outer card (container with header + form) */
+.card {
+  background-color: #000000; /* solid black */
+  color: #fafafa;            /* light text */
+  border-radius: 8px;
+  border: 1px solid #333;
 }
 
-/* Forum container */
-.forum-box {
-  background: #0d0d0d; /* solid dark background */
-  border-radius: 1.5rem;
-  padding: 2rem;
-  width: 100%;
-  max-width: 900px;
-  color: #ff6b81;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-
-/* Scrollable list of discussion cards */
-.forum-scroll {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-/* Card styling */
+/* Inner post cards (list items) */
 .forum-card {
-  background-color: #1a1a1a;
-  border-radius: 1rem;
-  padding: 1rem;
-  color: #faf8f9;
-  cursor: pointer;
-  transition: transform 0.2s ease;
+  background-color: #000000; /* white background */
+  color: #ffffff;            /* dark text */
+  border-radius: 6px;
+  border-color: #e85c70; 
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
+/* Override Bootstrap hover */
 .forum-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(255,107,129,0.25);
+  background-color: #000000; /* light gray on hover */
+  color: #eb8cac;            /* keep dark text */
+  transform: scale(1.01);
+  border: none;  
 }
 
-.forum-author {
-  font-size: 0.85rem;
+/* Ensure form inputs look good on black background */
+form input.form-control,
+form textarea.form-control {
+  background-color: #1c1c1c;
+  color: #fafafa;
+  border: 1px solid #444;
+}
+
+form input.form-control::placeholder,
+form textarea.form-control::placeholder {
   color: #aaa;
-  margin-bottom: 0.5rem;
 }
 
-/* Replies section */
-.replies-scroll {
-  margin-top: 1rem;
-  max-height: 50vh;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-
-.reply {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  color: #eee;
-  padding: 0.5rem;
-  border-left: 2px solid #ff6b81;
-}
-
-/* Nested reply button */
-.small-reply-button {
-  margin-left: 0.5rem;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
+/* Button styling */
+button.btn-primary {
+  background-color: #ff6b81;
   border: none;
-  border-radius: 0.3rem;
-  background: #ff6b81;
-  color: white;
-  cursor: pointer;
 }
 
-.small-reply-button:hover {
-  background: #ff8aa2;
-}
-
-/* Reply form */
-.reply-form {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.reply-form input {
-  flex: 1;
-  padding: 0.6rem;
-  border-radius: 0.5rem;
-  border: 1.5px solid #444;
-  background-color: #1a1a1a;
-  color: #faf8f9;
-}
-
-.reply-form button {
-  padding: 0.6rem 1rem;
-  border: none;
-  border-radius: 0.5rem;
-  background: linear-gradient(135deg, #ff8aa2, #ff6b81);
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.replying-to {
-  font-size: 0.8rem;
-  color: #ff8aa2;
-  margin-bottom: 0.3rem;
-}
-
-/* Responsive layout */
-@media (max-width: 768px) {
-  .forum-box {
-    padding: 1.5rem;
-  }
+button.btn-primary:hover {
+  background-color: #e85c70;
 }
