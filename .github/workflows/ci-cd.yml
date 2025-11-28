@@ -35,7 +35,7 @@ jobs:
         run: |
           if [ -d tests ]; then pytest; else echo "No backend tests found"; fi
 
-    frontend:
+  frontend:
     name: Frontend (React)
     runs-on: ubuntu-latest
 
@@ -52,39 +52,47 @@ jobs:
         with:
           node-version: "24"
 
-      # ✅ Show which package.json is being read
-      - name: Show package.json
+      # ✅ Verify lock file exists
+      - name: Verify package-lock.json
         run: |
-          echo "Printing frontend/package.json:"
-          cat package.json
-        working-directory: frontend
-
-      # ✅ Show if package-lock.json exists
-      - name: Show package-lock.json
-        run: |
-          if [ -f package-lock.json ]; then
-            echo "Lock file found:"
-            head -20 package-lock.json
-          else
-            echo "⚠️ No package-lock.json found in frontend/"
+          if [ ! -f package-lock.json ]; then
+            echo "❌ package-lock.json missing in frontend/"
+            exit 1
           fi
         working-directory: frontend
 
-      # ✅ Install dependencies using package-lock.json
+      # ✅ Show lock file being used
+      - name: Show package-lock.json
+        run: head -20 package-lock.json
+        working-directory: frontend
+
+      # ✅ Install dependencies strictly from lock file
       - name: Install frontend dependencies
         run: npm ci
         working-directory: frontend
 
       # ✅ Show where node_modules was created
       - name: Find node_modules
-        run: |
-          echo "Searching for node_modules..."
-          find . -name "node_modules" -type d
+        run: find . -name "node_modules" -type d
         working-directory: frontend
 
-      # ✅ Verify react-router-dom is installed
-      - name: Check react-router-dom
-        run: npm ls react-router-dom || (echo "❌ react-router-dom not found" && exit 1)
+      # ✅ Verify critical dependencies are installed
+      - name: Verify dependencies
+        run: |
+          npm ls react-router-dom || (echo "❌ react-router-dom missing" && exit 1)
+          npm ls axios || (echo "❌ axios missing" && exit 1)
+          npm ls react || (echo "❌ react missing" && exit 1)
+          npm ls react-dom || (echo "❌ react-dom missing" && exit 1)
+        working-directory: frontend
+
+      # ✅ Run tests (non-watch mode)
+      - name: Run frontend tests
+        run: npm test -- --watch=false
+        working-directory: frontend
+
+      # ✅ Build React app
+      - name: Build frontend
+        run: CI=false npm run build   # disable treating warnings as errors
         working-directory: frontend
 
   deploy:
