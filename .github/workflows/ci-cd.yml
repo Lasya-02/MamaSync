@@ -59,9 +59,21 @@ jobs:
       - name: List files in working directory
         run: ls -la
 
-      # ✅ Install dependencies
+      # ✅ Install dependencies (no package-lock.json dependency)
       - name: Install frontend dependencies
         run: npm install
+
+      # ✅ Debug: Verify react-router-dom is installed
+      - name: Check react-router-dom
+        run: npm ls react-router-dom || echo "react-router-dom not found!"
+
+      # ✅ Debug: Show node_modules contents
+      - name: Show node_modules
+        run: ls -la node_modules | head -20
+
+      # ✅ Debug: List src/pages to check case sensitivity
+      - name: List src/pages
+        run: ls -la src/pages
 
       # ✅ Run tests
       - name: Run frontend tests
