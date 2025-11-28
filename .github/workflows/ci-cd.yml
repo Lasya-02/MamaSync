@@ -52,7 +52,7 @@ jobs:
         with:
           node-version: "20"
 
-      # ✅ DEBUG: Show where CI is running
+      # ✅ Debug: Confirm working directory
       - name: Show working directory
         run: pwd
 
@@ -63,14 +63,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
-      # ✅ Run tests (if test script exists)
-      - name: Run frontend tests (if any)
-        run: |
-          if [ -f package.json ] && cat package.json | jq '.scripts.test' >/dev/null 2>&1; then \
-            npm test -- --watch=false; \
-          else \
-            echo "No frontend tests found"; \
-          fi
+      # ✅ Run tests
+      - name: Run frontend tests
+        run: npm test -- --watch=false
 
       # ✅ Build React app
       - name: Build frontend
