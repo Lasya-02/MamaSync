@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./css/Reminder.css";
+import axios from "axios";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+dayjs.extend(utc);
 
 export default function Reminder() {
   const [reminders, setReminders] = useState([]);
@@ -15,6 +19,32 @@ export default function Reminder() {
     category: "appointment",
     repeat: "none",
   });
+
+  const uuss =localStorage.getItem("userdata");
+  const parsedData = JSON.parse(uuss);
+
+  const userId =parsedData["name"];
+  const loadreminder = async () => {
+    try {
+      const res = await axios.get(`http://127.0.0.1:8000/getreminder`, {
+       params :{ "userId":userId}
+      });
+      
+      const existingreminder = res.data.reminders || [];
+      
+      if (existingreminder.length === 0) {
+        //await initializeDefaultTasks();
+      } else {
+        setReminders(existingreminder);
+      }
+    } catch (e) {
+      alert("please try again later")
+    } 
+  };
+
+    useEffect(() => {
+      loadreminder();
+    }, []);
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
@@ -110,10 +140,29 @@ export default function Reminder() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (editingId) {
+       try {
+        await axios.put(
+        `http://127.0.0.1:8000/updatereminder/${editingId}`,
+        { userId,
+          title: formData.title,
+          description: formData.description,
+          date: formData.date,
+          time: formData.time,
+          category: formData.category,
+          repeat: formData.repeat },
+        { params: { userId } }
+      );
+
+      loadreminder();
+      alert('updated reminder succesfully.');
+
+    } catch (e) {
+      console.error("edit reminder error:", e);
+    }
       setReminders((prev) =>
         prev.map((reminder) =>
           reminder.id === editingId
@@ -128,6 +177,28 @@ export default function Reminder() {
       );
       setEditingId(null);
     } else {
+
+       try {
+        const response = await axios.post(
+          'http://127.0.0.1:8000/createreminder', // Replace with your backend URL
+          {
+          userId,
+          title: formData.title,
+          description: formData.description,
+          date: formData.date,
+          time: formData.time,
+          category: formData.category,
+          repeat: formData.repeat,
+          }      
+        );
+
+        loadreminder();
+
+        alert('added reminder succesfully.');
+
+         } catch (err) {
+        alert(err.response?.data?.message || 'add reminder failed. Please try again.');
+      }  
       const newReminder = {
         ...formData,
         id: Date.now(),
@@ -162,8 +233,17 @@ export default function Reminder() {
     setShowForm(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this reminder?")) {
+      try {
+      await axios.delete(`http://127.0.0.1:8000/deletereminder/${id}`, {
+        params: { userId },
+      });
+
+      loadreminder();
+    } catch (e) {
+      alert("Failed to delete reminder. Please try again.");
+    }
       setReminders((prev) => prev.filter((reminder) => reminder.id !== id));
     }
   };
@@ -460,16 +540,7 @@ export default function Reminder() {
                         )}
                         <div className="reminder-meta">
                           <span className="reminder-date">
-                            📅{" "}
-                            {new Date(reminder.date).toLocaleDateString(
-                              "en-US",
-                              {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )}
+                            📅{dayjs(reminder.date).local().format("ddd, MMM D, YYYY")}
                           </span>
                           <span className="reminder-time">
                             🕐 {reminder.time}
@@ -528,16 +599,7 @@ export default function Reminder() {
                         )}
                         <div className="reminder-meta">
                           <span className="reminder-date">
-                            📅{" "}
-                            {new Date(reminder.date).toLocaleDateString(
-                              "en-US",
-                              {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )}
+                            {dayjs(reminder.date).local().format("ddd, MMM D, YYYY")}
                           </span>
                           <span className="reminder-time">
                             🕐 {reminder.time}

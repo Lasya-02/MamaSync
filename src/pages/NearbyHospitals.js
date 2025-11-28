@@ -1,11 +1,20 @@
 import React, { useEffect, useState } from "react";
+
 export default function Hospitals() {
-   const [hospitals, setHospitals] = useState([]);
-  const [map, setMap] = useState(null);
+  const [hospitals, setHospitals] = useState([]);
   const [error, setError] = useState("");
 
   const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
 
+  // Blocked keywords
+  const blockedWords = ["psychiatry", "psychiatric", "psych", "mental"];
+  const isBlocked = (name) => {
+    if (!name) return false;
+    const lower = name.toLowerCase();
+    return blockedWords.some((word) => lower.includes(word));
+  };
+
+  // ✅ Load Google Maps script (async loader)
   const loadMapsScript = (callback) => {
     if (document.getElementById("google-maps-script")) {
       callback();
@@ -14,94 +23,88 @@ export default function Hospitals() {
 
     const script = document.createElement("script");
     script.id = "google-maps-script";
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async`;
     script.async = true;
     script.onload = callback;
     document.body.appendChild(script);
   };
 
-  //blocked keywords
-  const blockedWords = ["psychiatry", "psychiatric", "psych", "mental"];
-
-  const isBlocked = (name) => {
-    if (!name) return false;
-    const lower = name.toLowerCase();
-    return blockedWords.some((word) => lower.includes(word));
-  };
-
-  //get hospital details
-  const getHospitalDetails = (placeId, mapObj, callback) => {
-    const service = new window.google.maps.places.PlacesService(mapObj);
-
-    service.getDetails(
-      {
-        placeId: placeId,
-        fields: ["name", "vicinity", "formatted_phone_number"],
-      },
-      (result, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-          callback(result);
-        } else {
-          callback(null);
+  // ✅ New Places API — Nearby Search
+  const fetchNearbyHospitals = async (location, mapObj) => {
+    try {
+      const response = await fetch(
+        "https://places.googleapis.com/v1/places:searchNearby",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": apiKey,
+            "X-Goog-FieldMask":
+              "places.id,places.displayName,places.location",
+          },
+          body: JSON.stringify({
+            includedTypes: ["hospital"],
+            maxResultCount: 10,
+            locationRestriction: {
+              circle: {
+                center: {
+                  latitude: location.lat,
+                  longitude: location.lng,
+                },
+                radius: 5000,
+              },
+            },
+          }),
         }
-      }
-    );
-  };
+      );
 
-  //find nearby hospitals
-  const findNearbyHospitals = async (mapObj, location) => {
-    const service = new window.google.maps.places.PlacesService(mapObj);
-
-    const request = {
-      location,
-      radius: "5000",
-      type: "hospital",
-    };
-
-    service.nearbySearch(request, async (results, status) => {
-      if (status !== window.google.maps.places.PlacesServiceStatus.OK) {
+      const data = await response.json();
+      if (!data.places) {
         setError("No hospitals found nearby.");
         return;
       }
 
       const selected = [];
-      let index = 0;
 
-      //3 valid hospitals
-      while (selected.length < 3 && index < results.length) {
-        const place = results[index];
+      for (const place of data.places) {
+        const name = place.displayName?.text;
+        if (!name || isBlocked(name)) continue;
 
-        if (isBlocked(place.name)) {
-          index++;
-          continue;
+        // ✅ Fetch details for each hospital
+        const detailsRes = await fetch(
+          `https://places.googleapis.com/v1/places/${place.id}?fields=displayName,formattedAddress,internationalPhoneNumber,location&key=${apiKey}`
+        );
+
+        const details = await detailsRes.json();
+
+        selected.push({
+          name: details.displayName?.text,
+          address: details.formattedAddress,
+          phone: details.internationalPhoneNumber || "Phone not listed",
+          place_id: place.id,
+          location: details.location,
+        });
+
+        // ✅ Add marker using FREE legacy Marker (no billing, no Map ID)
+        if (mapObj && details.location) {
+          new window.google.maps.Marker({
+            map: mapObj,
+            position: {
+              lat: details.location.latitude,
+              lng: details.location.longitude,
+            },
+            title: details.displayName?.text,
+          });
         }
 
-        await new Promise((resolve) => {
-          getHospitalDetails(place.place_id, mapObj, (details) => {
-            if (details) {
-              selected.push({
-                name: details.name,
-                address: details.vicinity,
-                phone: details.formatted_phone_number || "Phone not listed",
-                place_id: place.place_id,
-              });
-            }
-            resolve();
-          });
-        });
-
-        // Add map marker
-        new window.google.maps.Marker({
-          map: mapObj,
-          position: place.geometry.location,
-          title: place.name,
-        });
-
-        index++;
+        if (selected.length === 3) break;
       }
 
       setHospitals(selected);
-    });
+    } catch (err) {
+      console.error(err);
+      setError("Error fetching hospitals.");
+    }
   };
 
   useEffect(() => {
@@ -122,8 +125,8 @@ export default function Hospitals() {
               }
             );
 
-            setMap(mapObj);
-            findNearbyHospitals(mapObj, userLocation);
+            // ✅ Pass mapObj directly (fixes marker timing issue)
+            fetchNearbyHospitals(userLocation, mapObj);
           },
           () => setError("Please allow location access.")
         );
@@ -132,10 +135,12 @@ export default function Hospitals() {
       }
     });
   }, []);
+
   return (
     <div className="page-container" style={{ color: "white" }}>
-      <h2 >🏥 Nearby Hospitals</h2>
-      <p >Find trusted hospitals and clinics near your location.</p>
+      <h2>🏥 Nearby Hospitals</h2>
+      <p>Find trusted hospitals and clinics near your location.</p>
+
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <div
@@ -147,6 +152,7 @@ export default function Hospitals() {
           marginBottom: "20px",
         }}
       ></div>
+
       <h3>Top Nearby Hospitals</h3>
       <ul>
         {hospitals.map((h, i) => (
