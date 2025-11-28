@@ -61,7 +61,7 @@ jobs:
 
       # ✅ Install dependencies (no package-lock.json dependency)
       - name: Install frontend dependencies
-        run: npm install
+        run: npm install --force
 
       # ✅ Debug: Verify react-router-dom is installed
       - name: Check react-router-dom
