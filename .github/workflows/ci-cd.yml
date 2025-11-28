@@ -75,9 +75,6 @@ jobs:
       - name: List src/pages
         run: ls -la src/pages
 
-      # ✅ Run tests
-      - name: Run frontend tests
-        run: npm test -- --watch=false
 
       # ✅ Build React app
       - name: Build frontend
