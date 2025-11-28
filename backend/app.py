@@ -36,7 +36,10 @@ client = MongoClient(
     "mongodb+srv://lasya-02:lasya-02@mamasync.hqy4yen.mongodb.net/"
 )
 db = client["mamasync"]
-tasks_collection = db["daily_tasks"]      # 👈 ONE collection we use
+tasks_collection = db["daily_tasks"]
+forum_collection = db["forum_posts"]
+reminder_collection = db["reminder"] 
+guide_collection = db["guide"]     
 
 # ---------- MODELS ----------
 class TaskCreate(BaseModel):
@@ -48,6 +51,25 @@ class TaskCreate(BaseModel):
     completed: bool = False
     isPreset: bool = False
 
+class ForumPost(BaseModel):
+    userId: str
+    title: str
+    content: str
+    created_at: Optional[str] = None
+
+class ForumReply(BaseModel):
+    userId: str
+    content: str
+    created_at: Optional[str] = None
+
+class ReminderData(BaseModel):
+    userId: str
+    title: str
+    description: str
+    date:str
+    time: str
+    category: str
+    repeat: str
 
 class TaskUpdate(BaseModel):
     completed: Optional[bool] = None
@@ -312,6 +334,160 @@ def mark_all_complete(userId: str, date: str):
         raise HTTPException(status_code=404, detail="No tasks for this day")
 
     return {"updated": result.modified_count}
+
+@app.post("/forum", status_code=201)
+def create_post(post: ForumPost):
+    post_dict = post.model_dump()
+    post_dict["created_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+    post_dict["replies"] = []   # initialize empty replies array
+    result = forum_collection.insert_one(post_dict)
+    post_dict["_id"] = str(result.inserted_id)
+    return post_dict
+
+
+@app.get("/forum")
+def get_posts(userId: Optional[str] = None):
+    query = {"userId": userId} if userId else {}
+    posts = list(forum_collection.find(query))
+    for p in posts:
+        p["_id"] = str(p["_id"])
+    return posts
+
+
+@app.get("/forum/{post_id}")
+def get_post(post_id: str):
+    post = forum_collection.find_one({"_id": ObjectId(post_id)})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    post["_id"] = str(post["_id"])
+    return post
+
+
+@app.post("/forum/{post_id}/replies", status_code=201)
+def add_reply(post_id: str, reply: ForumReply):
+    reply_dict = reply.model_dump()
+    reply_dict["id"] = str(ObjectId())
+    reply_dict["created_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+
+
+    result = forum_collection.update_one(
+        {"_id": ObjectId(post_id)},
+        {"$push": {"replies": reply_dict}}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    return reply_dict
+
+@app.get("/forum/{post_id}/replies")
+def get_replies(post_id: str):
+    post = forum_collection.find_one({"_id": ObjectId(post_id)})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return post.get("replies", [])
+
+@app.get("/getreminder")
+def get_reminder(userId: str):
+
+    doc = reminder_collection.find_one({"userId": userId})
+    if not doc:
+        return {"reminders": []}
+    return {"reminders": doc.get("reminders", [])}
+
+
+@app.post("/createreminder")
+def create_reminder(reminder: ReminderData):
+    existing = reminder_collection.find_one({"userId": reminder.userId})
+    new_reminder = {
+    "id": str(ObjectId()),           
+    "title": reminder.title,
+    "description": reminder.description,
+    "date": reminder.date,
+    "time": reminder.time,
+    "category": reminder.category,
+    "repeat": reminder.repeat,
+    }
+
+    if existing:
+        reminder_collection.update_one(
+            {"_id": existing["_id"]},
+            {"$push": {"reminders": new_reminder}}
+        )
+    else:
+        reminder_collection.insert_one(
+            {
+                "userId": reminder.userId,
+                "reminders": [new_reminder],
+            }
+        )
+
+    return {"reminders": new_reminder}
+
+
+@app.delete("/deletereminder/{reminder_id}")
+def delete_reminder(reminder_id: str, userId: str):
+    """
+    Delete one task from the tasks array.
+    """
+    result = reminder_collection.update_one(
+        {"userId": userId},
+        {"$pull": {"reminders": {"id": reminder_id}}},
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="reminder not found")
+
+    return {"message": "reminder deleted"}
+    
+@app.put("/updatereminder/{reminder_id}")
+def update_task(reminder_id: str, userId: str, patch: ReminderData):
+    update_ops = {}
+    
+    if patch is not None:
+        update_ops["reminders.$.title"] = patch.title
+        update_ops["reminders.$.description"] = patch.description
+        update_ops["reminders.$.date"] = patch.date
+        update_ops["reminders.$.time"] = patch.time
+        update_ops["reminders.$.category"] = patch.category
+        update_ops["reminders.$.repeat"] = patch.repeat
+
+
+
+    if not update_ops:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+
+    result = reminder_collection.update_one(
+        {"userId": userId, "reminders.id": reminder_id},
+        {"$set": update_ops},
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="reminder not found")
+
+    # fetch the updated task
+    doc = reminder_collection.find_one({"userId": userId})
+    reminders = doc.get("reminders", [])
+    updated_reminder = next((r for r in reminders if r["id"] == reminder_id), None)
+
+    return {"reminders": updated_reminder}
+    
+@app.get("/guide")
+def get_guides():
+    docs = list(guide_collection.find({}, {"_id": 1, "title": 1}))
+    # Convert ObjectId to string if needed
+    for d in docs:
+        d["_id"] = str(d["_id"])
+    return {"documents": docs}
+
+@app.get("/guide/{doc_id}")
+def get_guide_content(doc_id: str):
+    doc = guide_collection.find_one({"_id": doc_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guide not found")
+
+    doc["_id"] = str(doc["_id"])
+    return doc
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
