@@ -5,10 +5,10 @@ import "./css/Dashboard.css";
 const API = "http://127.0.0.1:8000";
 
 export default function Dashboard() {
-  const uuss =sessionStorage.getItem("userdata");
+  const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
-
-  const userId =parsedData["name"]; // temporary
+  const userId = parsedData.name || "TestUser";
+  
   const today = new Date().toISOString().split("T")[0];
 
   const [tasks, setTasks] = useState([]);
