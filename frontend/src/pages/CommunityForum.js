@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./css/CommunityForum.css";
 
@@ -10,15 +11,15 @@ export default function CommunityForum() {
   const [content, setContent] = useState("");
 
   // Replace with logged-in userId from your auth context
-  const uuss = sessionStorage.getItem("userdata");
+  const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
-  const userId = parsedData["name"]; // temporary
+  const userId = parsedData.name || "TestUser";
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/forum")
-      .then(res => res.json())
-      .then(data => setPosts(data))
-      .catch(err => console.error(err));
+    axios
+      .get("http://127.0.0.1:8000/forum")
+      .then((res) => setPosts(res.data))
+      .catch((err) => console.error(err));
   }, []);
 
   const handleSubmit = async (e) => {
@@ -26,13 +27,8 @@ export default function CommunityForum() {
     const newPost = { title, content, userId };
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/forum", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newPost),
-      });
-      const data = await res.json();
-      setPosts([...posts, data]);
+      const res = await axios.post("http://127.0.0.1:8000/forum", newPost);
+      setPosts([...posts, res.data]);
       setTitle("");
       setContent("");
     } catch (err) {
