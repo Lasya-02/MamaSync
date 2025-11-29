@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./css/PostDetail.css";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import axios from "axios";   // ✅ added
 dayjs.extend(utc);
 
 export default function PostDetail() {
@@ -14,41 +15,39 @@ export default function PostDetail() {
   const [replyContent, setReplyContent] = useState("");
 
   // Replace with logged-in userId from your auth context
-  const uuss = sessionStorage.getItem("userdata");
+  const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
-  const userId = parsedData["name"]; // temporary
+  const userId = parsedData.name || "TestUser";
 
-  // Fetch post if not passed in state
+  // ✅ Fetch post if not passed in state (axios version)
   useEffect(() => {
     if (!post) {
-      fetch(`http://127.0.0.1:8000/forum/${id}`)
-        .then(res => res.json())
-        .then(data => setPost(data))
-        .catch(err => console.error("Error fetching post:", err));
+      axios
+        .get(`http://127.0.0.1:8000/forum/${id}`)
+        .then((res) => setPost(res.data))
+        .catch((err) => console.error("Error fetching post:", err));
     }
   }, [id, post]);
 
-  // Fetch replies
+  // ✅ Fetch replies (axios version)
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/forum/${id}/replies`)
-      .then(res => res.json())
-      .then(data => setReplies(data))
-      .catch(err => console.error("Error fetching replies:", err));
+    axios
+      .get(`http://127.0.0.1:8000/forum/${id}/replies`)
+      .then((res) => setReplies(res.data))
+      .catch((err) => console.error("Error fetching replies:", err));
   }, [id]);
 
-  // Submit a reply
+  // ✅ Submit a reply (axios version)
   const handleReplySubmit = async (e) => {
     e.preventDefault();
     const newReply = { content: replyContent, userId };
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/forum/${id}/replies`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newReply),
-      });
-      const data = await res.json();
-      setReplies([...replies, data]);   // update UI
+      const res = await axios.post(
+        `http://127.0.0.1:8000/forum/${id}/replies`,
+        newReply
+      );
+      setReplies([...replies, res.data]);   // update UI
       setReplyContent("");
     } catch (err) {
       console.error("Error posting reply:", err);
@@ -64,7 +63,9 @@ export default function PostDetail() {
           <h2 className="mb-3">{post.title}</h2>
           <p>{post.content}</p>
           <p><strong>Posted by:</strong> {post.userId}</p>
-          <small className="text-muted">{dayjs(post.created_at).local().format("MMM D, YYYY h:mm A")}</small>
+          <small className="text-muted">
+            {dayjs(post.created_at).local().format("MMM D, YYYY h:mm A")}
+          </small>
 
           <hr />
 
@@ -75,8 +76,12 @@ export default function PostDetail() {
             <div className="list-group mb-3">
               {replies.map((reply) => (
                 <div key={reply.id} className="list-group-item reply-card">
-                  <p className="text-muted"><strong> {reply.userId}</strong>: {reply.content}</p>
-                  <small className="text-muted">{dayjs(reply.created_at).local().format("MMM D, YYYY h:mm A")}</small>
+                  <p className="text-muted">
+                    <strong>{reply.userId}</strong>: {reply.content}
+                  </p>
+                  <small className="text-muted">
+                    {dayjs(reply.created_at).local().format("MMM D, YYYY h:mm A")}
+                  </small>
                 </div>
               ))}
             </div>
