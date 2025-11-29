@@ -20,10 +20,9 @@ export default function Reminder() {
     repeat: "none",
   });
 
-  const uuss =localStorage.getItem("userdata");
+  const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
-
-  const userId =parsedData["name"];
+  const userId = parsedData.name || "TestUser";
   const loadreminder = async () => {
     try {
       const res = await axios.get(`http://127.0.0.1:8000/getreminder`, {
@@ -372,7 +371,7 @@ export default function Reminder() {
       <div className="reminder-header">
         <h2>📅 Health Reminders</h2>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          {Notification.permission === "denied" && (
+          {typeof Notification !== "undefined" && Notification.permission === "denied" && (
             <span
               style={{
                 color: "#f44336",
