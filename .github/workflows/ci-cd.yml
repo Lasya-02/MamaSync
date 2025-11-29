@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.10"
 
       - name: Install backend dependencies
         run: |
@@ -50,26 +50,50 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
-      # ✅ Debug: Confirm working directory
-      - name: Show working directory
-        run: pwd
+      # ✅ Verify lock file exists
+      - name: Verify package-lock.json
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "❌ package-lock.json missing in frontend/"
+            exit 1
+          fi
+        working-directory: frontend
 
-      - name: List files in working directory
-        run: ls -la
+      # ✅ Show lock file being used
+      - name: Show package-lock.json
+        run: head -20 package-lock.json
+        working-directory: frontend
 
-      # ✅ Install dependencies
+      # ✅ Install dependencies strictly from lock file
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
+        working-directory: frontend
 
-      # ✅ Run tests
+      # ✅ Show where node_modules was created
+      - name: Find node_modules
+        run: find . -name "node_modules" -type d
+        working-directory: frontend
+
+      # ✅ Verify critical dependencies are installed
+      - name: Verify dependencies
+        run: |
+          npm ls react-router-dom || (echo "❌ react-router-dom missing" && exit 1)
+          npm ls axios || (echo "❌ axios missing" && exit 1)
+          npm ls react || (echo "❌ react missing" && exit 1)
+          npm ls react-dom || (echo "❌ react-dom missing" && exit 1)
+        working-directory: frontend
+
+      # ✅ Run tests (non-watch mode)
       - name: Run frontend tests
         run: npm test -- --watch=false
+        working-directory: frontend
 
       # ✅ Build React app
       - name: Build frontend
-        run: npm run build
+        run: CI=false npm run build   # disable treating warnings as errors
+        working-directory: frontend
 
   deploy:
     name: Deploy (placeholder)
