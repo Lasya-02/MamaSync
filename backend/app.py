@@ -7,14 +7,13 @@ from typing import Optional
 from pymongo import MongoClient
 from bson import ObjectId
 import uvicorn
+from database import mongo_db
 
 from userrepository import user_repository
 from datetime import date, time
 from dailytaskrepository import dailytask_repository
 import jwt
 from datetime import datetime, timedelta, timezone
-import os
-from pymongo import MongoClient
 
 app = FastAPI()
 
@@ -34,16 +33,12 @@ ALGORITHM = "HS256"
 
 #-----MONGODB CONNECTION----
 
-MONGO_URI = os.getenv("MONGO_URI")
-MONGO_DB = os.getenv("MONGO_DB", "mamasync")
 
-client = MongoClient(MONGO_URI)
-db = client[MONGO_DB]
+tasks_collection = mongo_db.get_collection("daily_tasks")
+forum_collection = mongo_db.get_collection("forum_posts")
+reminder_collection = mongo_db.get_collection("reminder")
+guide_collection = mongo_db.get_collection("guide")
 
-tasks_collection = db["daily_tasks"]
-forum_collection = db["forum_posts"]
-reminder_collection = db["reminder"]
-guide_collection = db["guide"]
     
 
 # ---------- MODELS ----------
