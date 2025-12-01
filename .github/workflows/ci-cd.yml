@@ -2,13 +2,12 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
+
   backend:
     name: Backend (FastAPI)
     runs-on: ubuntu-latest
@@ -31,7 +30,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run backend tests (if any)
+      - name: Run backend tests
         run: |
           if [ -d tests ]; then pytest; else echo "No backend tests found"; fi
 
@@ -50,63 +49,61 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "20"
 
-      # ✅ Verify lock file exists
-      - name: Verify package-lock.json
-        run: |
-          if [ ! -f package-lock.json ]; then
-            echo "❌ package-lock.json missing in frontend/"
-            exit 1
-          fi
-        working-directory: frontend
-
-      # ✅ Show lock file being used
-      - name: Show package-lock.json
-        run: head -20 package-lock.json
-        working-directory: frontend
-
-      # ✅ Install dependencies strictly from lock file
       - name: Install frontend dependencies
         run: npm ci
-        working-directory: frontend
 
-      # ✅ Show where node_modules was created
-      - name: Find node_modules
-        run: find . -name "node_modules" -type d
-        working-directory: frontend
-
-      # ✅ Verify critical dependencies are installed
-      - name: Verify dependencies
-        run: |
-          npm ls react-router-dom || (echo "❌ react-router-dom missing" && exit 1)
-          npm ls axios || (echo "❌ axios missing" && exit 1)
-          npm ls react || (echo "❌ react missing" && exit 1)
-          npm ls react-dom || (echo "❌ react-dom missing" && exit 1)
-        working-directory: frontend
-
-      # ✅ Run tests (non-watch mode)
       - name: Run frontend tests
         run: npm test -- --watch=false
-        working-directory: frontend
 
-      # ✅ Build React app
       - name: Build frontend
-        run: CI=false npm run build   # disable treating warnings as errors
-        working-directory: frontend
+        run: CI=false npm run build
 
-  deploy:
-    name: Deploy (placeholder)
-    needs:
-      - backend
-      - frontend
+  docker:
+    name: Build & Push Docker Images
+    needs: [ backend, frontend ]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deployment step
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build backend image
         run: |
-          echo "Add your deployment commands here (Render, Railway, Azure, etc.)"
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-backend:latest backend
+
+      - name: Build frontend image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-frontend:latest frontend
+
+      - name: Push backend image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-backend:latest
+
+      - name: Push frontend image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-frontend:latest
+
+  deploy:
+    name: Deploy to AWS EC2
+    needs: [ docker ]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.EC2_USER }}/YOUR_REPO_NAME
+            git pull origin main
+            docker-compose pull
+            docker-compose up -d
