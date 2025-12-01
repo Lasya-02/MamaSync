@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  backend:
+    image: lasya2221/mamasync-backend:latest
+    container_name: mamasync-backend
+    ports:
+      - "8000:8000"
+    restart: always
+
+  frontend:
+    image: lasya2221/mamasync-frontend:latest
+    container_name: mamasync-frontend
+    ports:
+      - "80:80"
+    restart: always
