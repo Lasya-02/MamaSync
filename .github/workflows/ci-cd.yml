@@ -82,6 +82,55 @@ jobs:
       - name: Push frontend image
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-frontend:latest
 
+  snyk-security-scan:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    needs: [ backend, frontend, docker ]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Snyk
+      run: npm install -g snyk
+
+    - name: Authenticate Snyk
+      run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+    # Dependency scan (Node)
+    - name: Snyk Dependency Scan (Frontend)
+      working-directory: frontend
+      run: snyk test --severity-threshold=high
+
+    # Dependency scan (Python)
+    - name: Snyk Dependency Scan (Backend)
+      working-directory: backend
+      run: snyk test --file=requirements.txt --severity-threshold=high
+
+    # Code scan
+    - name: Snyk Code Scan
+      run: snyk code test
+
+    # Log in to Docker Hub (needed for container scan)
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # Build Docker images
+    - name: Build Docker Images
+      run: |
+        docker build -t mamasync-backend:latest backend
+        docker build -t mamasync-frontend:latest frontend
+
+    # Container scan
+    - name: Snyk Container Scan (Backend)
+      run: snyk container test mamasync-backend:latest
+
+    - name: Snyk Container Scan (Frontend)
+      run: snyk container test mamasync-frontend:latest
+
   deploy:
     name: Deploy to AWS EC2
     needs: [ docker ]
