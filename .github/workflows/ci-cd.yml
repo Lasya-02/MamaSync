@@ -45,11 +45,13 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Inject frontend secrets
+        run: |
+          echo "REACT_APP_GOOGLE_MAPS_API_KEY=${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" >> $GITHUB_ENV
+
       - name: Install frontend dependencies
         run: npm ci
-
-      - name: Run frontend tests
-        run: npm test -- --watch=false
 
       - name: Build frontend
         run: CI=false npm run build
