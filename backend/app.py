@@ -13,7 +13,8 @@ from datetime import date, time
 from dailytaskrepository import dailytask_repository
 import jwt
 from datetime import datetime, timedelta, timezone
-
+import os
+from pymongo import MongoClient
 
 app = FastAPI()
 
@@ -26,20 +27,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-JWT_SECRET_KEY="f9bf78b9a18ce6d46a0cd2b0b86df9da2c4a9e3f1a5b8d2c4e3f1a5b8d2c4a9e" # Use a long, random string
-
-SECRET_KEY = JWT_SECRET_KEY #os.environ.get("JWT_SECRET_KEY")
+#-------JWT-----
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+SECRET_KEY = JWT_SECRET_KEY
 ALGORITHM = "HS256"
 
-# ---- MongoDB connection ----
-client = MongoClient(
-    "mongodb+srv://lasya-02:lasya-02@mamasync.hqy4yen.mongodb.net/"
-)
-db = client["mamasync"]
+#-----MONGODB CONNECTION----
+
+MONGO_URI = os.getenv("MONGO_URI")
+MONGO_DB = os.getenv("MONGO_DB", "mamasync")
+
+client = MongoClient(MONGO_URI)
+db = client[MONGO_DB]
+
 tasks_collection = db["daily_tasks"]
 forum_collection = db["forum_posts"]
-reminder_collection = db["reminder"] 
-guide_collection = db["guide"]     
+reminder_collection = db["reminder"]
+guide_collection = db["guide"]
+    
 
 # ---------- MODELS ----------
 class TaskCreate(BaseModel):
