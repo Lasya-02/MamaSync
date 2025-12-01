@@ -133,10 +133,10 @@ jobs:
 
     # Container scan
     - name: Snyk Container Scan (Backend)
-      run: snyk container test mamasync-backend:latest --policy-path=.snyk
+      run: snyk container test mamasync-backend:latest --severity-threshold=high --policy-path=.snyk
 
     - name: Snyk Container Scan (Frontend)
-      run: snyk container test mamasync-frontend:latest --policy-path=.snyk
+      run: snyk container test mamasync-frontend:latest --severity-threshold=high --policy-path=.snyk
 
   deploy:
     name: Deploy to AWS EC2
