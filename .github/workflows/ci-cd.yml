@@ -206,7 +206,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/${{ secrets.EC2_USER }}/YOUR_REPO_NAME
+            cd /home/${{ secrets.EC2_USER }}/mamasync
 
             # Write production .env
             cat > .env << 'EOF'
