@@ -8,6 +8,7 @@ from pymongo import MongoClient
 from bson import ObjectId
 import uvicorn
 from database import mongo_db
+import os
 
 
 from userrepository import user_repository
