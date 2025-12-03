@@ -1,6 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
 from bson import ObjectId
+from unittest.mock import MagicMock
+import jwt
+from datetime import datetime, timedelta, timezone
+from app import create_access_token, verify_token
 
 from app import app
 
@@ -241,3 +245,240 @@ def test_update_reminder(patch_collections):
         "repeat": "None"
     })
     assert r.status_code == 200
+
+
+
+# ===========================================================
+#              MORE TESTS FOR HIGHER COVERAGE
+# ===========================================================
+
+def test_jwt_create_and_verify(monkeypatch):
+    monkeypatch.setattr("app.SECRET_KEY", "key123")
+
+    token = create_access_token("user1")
+    decoded = verify_token(token)
+
+    assert decoded["user_id"] == "user1"
+
+
+def test_jwt_invalid_token():
+    assert verify_token("invalidtoken123") is None
+
+
+def test_jwt_expired(monkeypatch):
+    monkeypatch.setattr("app.SECRET_KEY", "key123")
+
+    expired = jwt.encode(
+        {"user_id": "u1", "exp": datetime.now(timezone.utc) - timedelta(minutes=1)},
+        "key123",
+        algorithm="HS256",
+    )
+
+    assert verify_token(expired) is None
+
+
+# ===========================================================
+#                     GUIDE TESTS
+# ===========================================================
+
+def test_get_guide_not_found(monkeypatch):
+    fake = MockCollection()
+    fake.find_one_result = None
+    monkeypatch.setattr("app.guide_collection", fake)
+
+    valid = str(ObjectId())
+    r = client.get(f"/guide/{valid}")
+    assert r.status_code == 404
+
+
+# ===========================================================
+#                     FORUM EXTRA TESTS
+# ===========================================================
+
+def test_get_replies_not_found(monkeypatch):
+    fake = MockCollection()
+    fake.find_one_result = None
+    monkeypatch.setattr("app.forum_collection", fake)
+
+    valid = str(ObjectId())
+    r = client.get(f"/forum/{valid}/replies")
+    assert r.status_code == 404
+
+
+def test_get_posts_filter(monkeypatch):
+    fake = MockCollection()
+    fake.find_result = [{"_id": VALID_ID, "userId": "u1"}]
+    monkeypatch.setattr("app.forum_collection", fake)
+    
+    r = client.get("/forum?userId=u1")
+    assert r.status_code == 200
+
+
+def test_get_posts_empty(monkeypatch):
+    fake = MockCollection()
+    fake.find_result = []
+    monkeypatch.setattr("app.forum_collection", fake)
+
+    r = client.get("/forum")
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+# ===========================================================
+#                     WATER INTAKE TESTS
+# ===========================================================
+
+def test_waterintake_new_day(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.find_by_user_and_date.return_value = None
+    fake_repo.find_latest_goal.return_value = 2500
+    fake_repo.create.return_value = "abc"
+
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+
+    r = client.get("/waterintake?userId=u1&date=d1")
+    assert r.status_code == 200
+    assert r.json()["data"]["goalIntake"] == 2500
+
+
+def test_waterintake_existing(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.find_by_user_and_date.return_value = {"goalIntake": 2000}
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+
+    r = client.get("/waterintake?userId=u1&date=d1")
+    assert r.status_code == 200
+
+
+def test_waterintake_create_duplicate(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.find_by_user_and_date.return_value = {"id": "1"}
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+
+    r = client.post("/waterintake", json={
+        "userId": "u1", "date": "d1", "goalIntake": 2000
+    })
+    assert r.status_code == 400
+
+
+def test_add_waterintake_create_new(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.find_by_user_and_date.return_value = None
+    fake_repo.create.return_value = "abc"
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+
+    r = client.patch("/waterintake/add?userId=u1&date=d1", json={"amount": 300})
+    assert r.status_code == 200
+
+
+def test_add_waterintake_existing(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.find_by_user_and_date.return_value = {"currentIntake": 0}
+    fake_repo.increment_intake.return_value = True
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+
+    r = client.patch("/waterintake/add?userId=u1&date=d1", json={"amount": 300})
+    assert r.status_code == 200
+
+
+def test_water_goal_create(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.find_by_user_and_date.return_value = None
+    fake_repo.create.return_value = "abc"
+
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+    monkeypatch.setattr("app.waterintake_collection", MockCollection())
+
+    r = client.put("/waterintake/goal?userId=u1&date=d1&goalIntake=2500")
+    assert r.status_code == 200
+
+
+def test_water_goal_update(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.find_by_user_and_date.return_value = {"goalIntake": 2000}
+
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+    monkeypatch.setattr("app.waterintake_collection", MockCollection())
+
+    r = client.put("/waterintake/goal?userId=u1&date=d1&goalIntake=2500")
+    assert r.status_code == 200
+
+
+def test_water_reset_not_found(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.find_by_user_and_date.return_value = None
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+
+    r = client.put("/waterintake/reset?userId=u1&date=d1")
+    assert r.status_code == 404
+
+
+def test_water_reset_success(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.find_by_user_and_date.return_value = {"currentIntake": 100}
+    fake_repo.update_intake.return_value = True
+
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+
+    r = client.put("/waterintake/reset?userId=u1&date=d1")
+    assert r.status_code == 200
+
+
+def test_water_delete(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.delete.return_value = True
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+
+    r = client.delete("/waterintake?userId=u1&date=d1")
+    assert r.status_code == 200
+
+
+def test_water_delete_not_found(monkeypatch):
+    fake_repo = MagicMock()
+    fake_repo.delete.return_value = False
+    monkeypatch.setattr("app.waterintake_repository", fake_repo)
+
+    r = client.delete("/waterintake?userId=u1&date=d1")
+    assert r.status_code == 404
+
+
+# ===========================================================
+#                REMINDER EXTRA TESTS
+# ===========================================================
+
+def test_update_reminder_not_found(patch_collections):
+    patch_collections.update_result = False
+    r = client.put("/updatereminder/r1?userId=u1", json={
+        "userId": "u1",
+        "title": "Updated",
+        "description": "X",
+        "date": "2025-12-01",
+        "time": "09:00",
+        "category": "Health",
+        "repeat": "None"
+    })
+    assert r.status_code == 404
+
+
+def test_delete_reminder_not_found(monkeypatch):
+    fake = MockCollection()
+    fake.update_result = False
+    monkeypatch.setattr("app.reminder_collection", fake)
+
+    r = client.delete("/deletereminder/x?userId=u1")
+    assert r.status_code == 404
+
+
+# ===========================================================
+#                TASKS EXTRA TESTS
+# ===========================================================
+
+def test_update_task_no_field():
+    r = client.patch("/tasks/t1?userId=u1&date=d1", json={})
+    assert r.status_code == 400
+
+
+def test_delete_task_not_found(patch_collections):
+    patch_collections.update_result = False
+    r = client.delete("/tasks/t1?userId=u1&date=d1")
+    assert r.status_code == 404
