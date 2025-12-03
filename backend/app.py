@@ -1,3 +1,5 @@
+from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi import FastAPI, HTTPException,status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,6 +21,8 @@ from datetime import datetime, timedelta, timezone
 
 app = FastAPI()
 
+# instrument metrics
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 # CORS for React
 app.add_middleware(
     CORSMiddleware,
