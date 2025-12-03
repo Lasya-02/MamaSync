@@ -8,7 +8,8 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 }
 
 .dashboard-wrapper {
@@ -81,7 +82,8 @@ body {
 }
 
 @keyframes bounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -257,23 +259,28 @@ body {
 }
 
 .water-card::before {
-  content: '💧';
-  display: block;
-  font-size: 32px;
-  margin-bottom: 8px;
+  content: "";
+  display: none;
 }
 
 .water-label {
   font-size: 14px;
   opacity: 0.9;
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .water-value {
   font-size: 28px;
   font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.water-ml-value {
+  font-size: 13px;
+  opacity: 0.85;
   margin-bottom: 8px;
+  font-weight: 500;
 }
 
 .water-bar {
@@ -310,14 +317,19 @@ body {
   font-family: inherit;
 }
 
-.water-btn:hover {
+.water-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.5);
   transform: translateY(-1px);
 }
 
-.water-btn:active {
+.water-btn:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.water-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Tasks Card */
@@ -335,7 +347,7 @@ body {
 }
 
 .tasks-card::before {
-  content: '✅';
+  content: "✅";
   display: block;
   font-size: 32px;
   margin-bottom: 8px;
@@ -700,7 +712,7 @@ body {
 }
 
 .health-card li::before {
-  content: '✓ ';
+  content: "✓ ";
   margin-right: 8px;
 }
 

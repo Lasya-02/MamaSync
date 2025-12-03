@@ -8,7 +8,7 @@ export default function Dashboard() {
   const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
   const userId = parsedData.name || "TestUser";
-  
+
   const today = new Date().toISOString().split("T")[0];
 
   const [tasks, setTasks] = useState([]);
@@ -18,14 +18,36 @@ export default function Dashboard() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
-  const [waterIntake, setWaterIntake] = useState(5);
+  const [waterIntake, setWaterIntake] = useState(0);
+  const [waterGoal, setWaterGoal] = useState(8);
+  const [waterLoading, setWaterLoading] = useState(true);
 
   // Default preset tasks
   const defaultTasks = [
-    { emoji: "💧", title: "Drink 8 glasses of water", time: "All day", isPreset: true },
-    { emoji: "🍎", title: "Eat healthy breakfast", time: "8:00 AM", isPreset: true },
-    { emoji: "🧘‍♀️", title: "Prenatal yoga stretch", time: "12:00 PM", isPreset: true },
-    { emoji: "💊", title: "Take prenatal vitamin", time: "9:00 PM", isPreset: true }
+    {
+      emoji: "💧",
+      title: "Drink 8 glasses of water",
+      time: "All day",
+      isPreset: true,
+    },
+    {
+      emoji: "🍎",
+      title: "Eat healthy breakfast",
+      time: "8:00 AM",
+      isPreset: true,
+    },
+    {
+      emoji: "🧘‍♀️",
+      title: "Prenatal yoga stretch",
+      time: "12:00 PM",
+      isPreset: true,
+    },
+    {
+      emoji: "💊",
+      title: "Take prenatal vitamin",
+      time: "9:00 PM",
+      isPreset: true,
+    },
   ];
 
   const moods = [
@@ -33,7 +55,7 @@ export default function Dashboard() {
     { emoji: "😌", label: "Calm", value: "calm" },
     { emoji: "😴", label: "Tired", value: "tired" },
     { emoji: "😰", label: "Anxious", value: "anxious" },
-    { emoji: "🤢", label: "Unwell", value: "unwell" }
+    { emoji: "🤢", label: "Unwell", value: "unwell" },
   ];
 
   // ----------------------------------------------------------------
@@ -44,9 +66,9 @@ export default function Dashboard() {
       const res = await axios.get(`${API}/tasks`, {
         params: { userId, date: today },
       });
-      
+
       const existingTasks = res.data.tasks || [];
-      
+
       if (existingTasks.length === 0) {
         await initializeDefaultTasks();
       } else {
@@ -65,7 +87,7 @@ export default function Dashboard() {
   // ----------------------------------------------------------------
   const initializeDefaultTasks = async () => {
     try {
-      const promises = defaultTasks.map(task =>
+      const promises = defaultTasks.map((task) =>
         axios.post(`${API}/tasks`, {
           userId,
           date: today,
@@ -76,7 +98,7 @@ export default function Dashboard() {
           isPreset: true,
         })
       );
-      
+
       await Promise.all(promises);
       await loadTasks();
     } catch (e) {
@@ -84,8 +106,40 @@ export default function Dashboard() {
     }
   };
 
+  // ----------------------------------------------------------------
+  // LOAD WATER INTAKE
+  // ----------------------------------------------------------------
+  const loadWaterIntake = async () => {
+    try {
+      const res = await axios.get(`${API}/waterintake`, {
+        params: { userId, date: today },
+      });
+
+      if (res.data.data) {
+        // Convert ml to glasses (250ml per glass)
+        const glasses = Math.floor(res.data.data.currentIntake / 250);
+        setWaterIntake(glasses);
+        const goalGlasses = Math.floor(res.data.data.goalIntake / 250);
+        setWaterGoal(goalGlasses);
+
+        // Show message if it's a new day
+        if (res.data.message && res.data.message.includes("New day")) {
+          console.log("🌅 New day started! Water intake reset to 0");
+        }
+      }
+    } catch (e) {
+      console.error("Error loading water intake:", e);
+      // Fallback to defaults if API fails
+      setWaterIntake(0);
+      setWaterGoal(8);
+    } finally {
+      setWaterLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadTasks();
+    loadWaterIntake();
   }, []);
 
   // ----------------------------------------------------------------
@@ -184,15 +238,35 @@ export default function Dashboard() {
   // ----------------------------------------------------------------
   // WATER INTAKE HANDLERS
   // ----------------------------------------------------------------
-  const increaseWater = () => {
-    if (waterIntake < 8) {
-      setWaterIntake(waterIntake + 1);
+  const increaseWater = async () => {
+    if (waterIntake < waterGoal) {
+      try {
+        // Add 250ml (1 glass)
+        await axios.patch(
+          `${API}/waterintake/add`,
+          { amount: 250 },
+          { params: { userId, date: today } }
+        );
+        setWaterIntake(waterIntake + 1);
+      } catch (e) {
+        console.error("Error increasing water intake:", e);
+      }
     }
   };
 
-  const decreaseWater = () => {
+  const decreaseWater = async () => {
     if (waterIntake > 0) {
-      setWaterIntake(waterIntake - 1);
+      try {
+        // Subtract 250ml (1 glass) - negative amount
+        await axios.patch(
+          `${API}/waterintake/add`,
+          { amount: -250 },
+          { params: { userId, date: today } }
+        );
+        setWaterIntake(waterIntake - 1);
+      } catch (e) {
+        console.error("Error decreasing water intake:", e);
+      }
     }
   };
 
@@ -200,8 +274,9 @@ export default function Dashboard() {
   // COUNTS
   // ----------------------------------------------------------------
   const completedCount = tasks.filter((t) => t.completed).length;
-  const completionPercentage = tasks.length === 0 ? 0 : (completedCount / tasks.length) * 100;
-  const waterPercentage = (waterIntake / 8) * 100;
+  const completionPercentage =
+    tasks.length === 0 ? 0 : (completedCount / tasks.length) * 100;
+  const waterPercentage = waterGoal === 0 ? 0 : (waterIntake / waterGoal) * 100;
 
   // ----------------------------------------------------------------
   // UI RETURN
@@ -217,9 +292,11 @@ export default function Dashboard() {
             <div className="modal-header">
               <div className="modal-icon">✨</div>
               <h2 className="modal-title">Add New Task</h2>
-              <p className="modal-subtitle">What would you like to accomplish today?</p>
+              <p className="modal-subtitle">
+                What would you like to accomplish today?
+              </p>
             </div>
-            
+
             <div className="modal-body">
               <input
                 type="text"
@@ -227,11 +304,11 @@ export default function Dashboard() {
                 placeholder="e.g., Read a pregnancy book"
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+                onKeyPress={(e) => e.key === "Enter" && handleAddTask()}
                 autoFocus
               />
             </div>
-            
+
             <div className="modal-footer">
               <button className="modal-btn cancel-btn" onClick={closeAddModal}>
                 Cancel
@@ -249,17 +326,20 @@ export default function Dashboard() {
       {/* ---------------------------------------------------------------- */}
       {showDeleteModal && taskToDelete && (
         <div className="modal-overlay" onClick={closeDeleteModal}>
-          <div className="modal-container delete-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-container delete-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header delete-header">
               <div className="modal-icon">🗑️</div>
               <h2 className="modal-title">Delete Task?</h2>
               <p className="modal-subtitle">
-                {taskToDelete.isPreset 
+                {taskToDelete.isPreset
                   ? "This is a preset task. Are you sure you want to delete it?"
                   : "Are you sure you want to delete this task?"}
               </p>
             </div>
-            
+
             <div className="modal-body">
               <div className="delete-task-preview">
                 <div className="task-emoji">{taskToDelete.emoji}</div>
@@ -269,9 +349,12 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="modal-footer">
-              <button className="modal-btn cancel-btn" onClick={closeDeleteModal}>
+              <button
+                className="modal-btn cancel-btn"
+                onClick={closeDeleteModal}
+              >
                 Cancel
               </button>
               <button className="modal-btn delete-btn" onClick={confirmDelete}>
@@ -292,15 +375,41 @@ export default function Dashboard() {
       <div className="top-cards">
         {/* Water Intake */}
         <div className="card water-card">
-          <span className="water-label">Water Intake</span>
-          <div className="water-value">{waterIntake}/8</div>
-          <div className="water-bar">
-            <div className="water-fill" style={{ width: `${waterPercentage}%` }}></div>
-          </div>
-          <div className="water-controls">
-            <button className="water-btn" onClick={decreaseWater}>−</button>
-            <button className="water-btn" onClick={increaseWater}>+</button>
-          </div>
+          <span className="water-label">Water Intake 💧</span>
+          {waterLoading ? (
+            <div className="water-value">Loading...</div>
+          ) : (
+            <>
+              <div className="water-value">
+                {waterIntake}/{waterGoal} glasses
+              </div>
+              <div className="water-ml-value">
+                {waterIntake * 250}ml / {waterGoal * 250}ml
+              </div>
+              <div className="water-bar">
+                <div
+                  className="water-fill"
+                  style={{ width: `${waterPercentage}%` }}
+                ></div>
+              </div>
+              <div className="water-controls">
+                <button
+                  className="water-btn"
+                  onClick={decreaseWater}
+                  disabled={waterIntake === 0}
+                >
+                  −
+                </button>
+                <button
+                  className="water-btn"
+                  onClick={increaseWater}
+                  disabled={waterIntake >= waterGoal}
+                >
+                  +
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Daily Tasks */}
@@ -336,8 +445,8 @@ export default function Dashboard() {
         ) : (
           <div className="tasks-list">
             {tasks.map((task) => (
-              <div 
-                className={`task-item ${task.completed ? 'completed' : ''}`}
+              <div
+                className={`task-item ${task.completed ? "completed" : ""}`}
                 key={task.id}
               >
                 <input
@@ -375,7 +484,9 @@ export default function Dashboard() {
           {moods.map((mood) => (
             <button
               key={mood.value}
-              className={`mood-btn ${currentMood === mood.value ? 'selected' : ''}`}
+              className={`mood-btn ${
+                currentMood === mood.value ? "selected" : ""
+              }`}
               onClick={() => handleMoodSelect(mood.value)}
             >
               <div className="mood-emoji">{mood.emoji}</div>

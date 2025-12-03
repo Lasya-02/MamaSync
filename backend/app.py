@@ -16,6 +16,7 @@ import os
 from userrepository import user_repository
 from datetime import date, time
 from dailytaskrepository import dailytask_repository
+from waterintakerepository import waterintake_repository
 import jwt
 from datetime import datetime, timedelta, timezone
 
@@ -44,6 +45,7 @@ tasks_collection = mongo_db.get_collection("daily_tasks")
 forum_collection = mongo_db.get_collection("forum_posts")
 reminder_collection = mongo_db.get_collection("reminder")
 guide_collection = mongo_db.get_collection("guide")
+waterintake_collection = mongo_db.get_collection("water_intake")
 
     
 
@@ -98,6 +100,15 @@ class UserRegistration(BaseModel):
     dueDate: str   # Pydantic v2 handles date objects
     height: float
     weight: float
+
+class WaterIntakeData(BaseModel):
+    userId: str
+    date: str  # "YYYY-MM-DD"
+    goalIntake: int  # in ml
+    currentIntake: int = 0  # in ml
+
+class WaterIntakeUpdate(BaseModel):
+    amount: int  # amount to add in ml
 
 # ---------- HELPERS ----------
 def build_task_dict(task: TaskCreate) -> dict:
@@ -494,6 +505,148 @@ def get_guide_content(doc_id: str):
 
     doc["_id"] = str(doc["_id"])
     return doc
+
+# ---------- WATER INTAKE ROUTES ----------
+
+@app.get("/waterintake")
+def get_water_intake(userId: str, date: str):
+    """
+    Get water intake data for a specific user and date.
+    Automatically creates a new record for today with 0 intake if it doesn't exist.
+    Uses the user's previous goal or defaults to 2000ml.
+    """
+    intake = waterintake_repository.find_by_user_and_date(userId, date)
+    
+    if not intake:
+        # Get user's last known goal, or use default
+        last_goal = waterintake_repository.find_latest_goal(userId)
+        goal = last_goal if last_goal else 2000
+        
+        # Create new record for today with 0 intake
+        new_intake = {
+            "userId": userId,
+            "date": date,
+            "goalIntake": goal,
+            "currentIntake": 0
+        }
+        intake_id = waterintake_repository.create(new_intake)
+        new_intake["_id"] = intake_id
+        return {"data": new_intake, "message": "New day started - water intake reset"}
+    
+    return {"data": intake}
+
+
+@app.post("/waterintake", status_code=201)
+def create_water_intake(intake: WaterIntakeData):
+    """
+    Create a new water intake record for a user on a specific date.
+    If a record already exists, return an error.
+    """
+    existing = waterintake_repository.find_by_user_and_date(intake.userId, intake.date)
+    
+    if existing:
+        raise HTTPException(
+            status_code=400, 
+            detail="Water intake record already exists for this date"
+        )
+    
+    intake_dict = intake.model_dump()
+    intake_id = waterintake_repository.create(intake_dict)
+    intake_dict["_id"] = intake_id
+    
+    return {"message": "Water intake record created", "data": intake_dict}
+
+
+@app.patch("/waterintake/add")
+def add_water_intake(userId: str, date: str, update: WaterIntakeUpdate):
+    """
+    Increment water intake by a specific amount.
+    Creates a new record with default goal if it doesn't exist.
+    """
+    existing = waterintake_repository.find_by_user_and_date(userId, date)
+    
+    if not existing:
+        # Create new record with default goal of 2000ml
+        new_intake = {
+            "userId": userId,
+            "date": date,
+            "goalIntake": 2000,
+            "currentIntake": update.amount
+        }
+        intake_id = waterintake_repository.create(new_intake)
+        new_intake["_id"] = intake_id
+        return {"message": "Water intake tracked", "data": new_intake}
+    
+    # Increment existing intake
+    success = waterintake_repository.increment_intake(userId, date, update.amount)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Failed to update water intake")
+    
+    # Fetch updated record
+    updated = waterintake_repository.find_by_user_and_date(userId, date)
+    return {"message": "Water intake updated", "data": updated}
+
+
+@app.put("/waterintake/goal")
+def update_water_goal(userId: str, date: str, goalIntake: int):
+    """
+    Update the daily water intake goal for a user.
+    """
+    existing = waterintake_repository.find_by_user_and_date(userId, date)
+    
+    if not existing:
+        # Create new record with specified goal
+        new_intake = {
+            "userId": userId,
+            "date": date,
+            "goalIntake": goalIntake,
+            "currentIntake": 0
+        }
+        intake_id = waterintake_repository.create(new_intake)
+        new_intake["_id"] = intake_id
+        return {"message": "Water intake goal set", "data": new_intake}
+    
+    # Update goal
+    waterintake_collection.update_one(
+        {"userId": userId, "date": date},
+        {"$set": {"goalIntake": goalIntake}}
+    )
+    
+    updated = waterintake_repository.find_by_user_and_date(userId, date)
+    return {"message": "Water intake goal updated", "data": updated}
+
+
+@app.put("/waterintake/reset")
+def reset_water_intake(userId: str, date: str):
+    """
+    Reset the current water intake to 0 for a specific date.
+    """
+    existing = waterintake_repository.find_by_user_and_date(userId, date)
+    
+    if not existing:
+        raise HTTPException(status_code=404, detail="Water intake record not found")
+    
+    success = waterintake_repository.update_intake(userId, date, 0)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Failed to reset water intake")
+    
+    updated = waterintake_repository.find_by_user_and_date(userId, date)
+    return {"message": "Water intake reset", "data": updated}
+
+
+@app.delete("/waterintake")
+def delete_water_intake(userId: str, date: str):
+    """
+    Delete water intake record for a specific date.
+    """
+    success = waterintake_repository.delete(userId, date)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Water intake record not found")
+    
+    return {"message": "Water intake record deleted"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
