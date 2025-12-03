@@ -34,7 +34,7 @@ app.add_middleware(
 )
 
 #-------JWT-----
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev_secret_key")
 SECRET_KEY = JWT_SECRET_KEY
 ALGORITHM = "HS256"
 
