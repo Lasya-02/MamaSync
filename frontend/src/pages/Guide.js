@@ -4,15 +4,15 @@ import "./css/Guide.css";
 export default function Guide() {
   const [documents, setDocuments] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
-
+  const apiURL = process.env.REACT_APP_API_URL;
   useEffect(() => {
-    fetch("http://localhost:8000/guide")
+    fetch(`${apiURL}/guide`)
       .then((res) => res.json())
       .then((data) => setDocuments(data.documents));
   }, []);
 
   const loadDocument = (id) => {
-    fetch(`http://localhost:8000/guide/${id}`)
+    fetch(`${apiURL}/guide/${id}`)
       .then((res) => res.json())
       .then((data) => setSelectedDoc(data));
   };
