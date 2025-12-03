@@ -40,7 +40,7 @@ jobs:
         run: echo "JWT_SECRET_KEY=testsecret" >> $GITHUB_ENV
 
       - name: Run backend tests
-        run: pytest
+        run: TEST_MODE=1 pytest --cov=. --cov-report=term-missing
 
   frontend:
     name: Frontend (React)
