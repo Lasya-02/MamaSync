@@ -7,3 +7,5 @@ PyJWT
 pytest
 httpx
 email-validator
+prometheus-client
+prometheus-fastapi-instrumentator
