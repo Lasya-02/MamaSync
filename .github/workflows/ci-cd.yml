@@ -35,6 +35,9 @@ jobs:
         run: |
           echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
           echo "MONGO_DB=${{ secrets.MONGO_DB }}" >> $GITHUB_ENV
+          
+      - name: Set test JWT secret
+        run: echo "JWT_SECRET_KEY=testsecret" >> $GITHUB_ENV
 
       - name: Run backend tests
         run: pytest
