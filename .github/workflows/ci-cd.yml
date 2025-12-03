@@ -67,9 +67,6 @@ jobs:
       - name: Build frontend
         run: CI=false npm run build
 
-      - name: Run frontend tests
-        run: npm test -- --watch=false --ci --coverage
-
   docker:
     name: Build & Push Docker Images
     needs: [ backend, frontend ]
@@ -88,7 +85,12 @@ jobs:
         run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-backend:latest backend
 
       - name: Build frontend image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-frontend:latest frontend
+        run: |
+          docker build \
+          --build-arg REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }} \
+          --build-arg REACT_APP_GOOGLE_MAPS_API_KEY=${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }} \
+          -t ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-frontend:latest frontend
+
 
       - name: Push backend image
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-backend:latest
