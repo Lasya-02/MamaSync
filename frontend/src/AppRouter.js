@@ -8,10 +8,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import Reminder from './pages/Reminder';
 import Guide from './pages/Guide';
 import Community from './pages/CommunityForum';
-import ForumDetail from './pages/ForumDetail';
 import Hospitals from './pages/NearbyHospitals';
 import Profile from './pages/AccountProfile';
-import SOS from './pages/Sos';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './pages/ProtectedRoute';
 import NotFoundPage from './pages/NotFoundPage';
@@ -79,14 +77,6 @@ function AppRouter() {
           element={
             <ProtectedRoute>
               <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/sos"
-          element={
-            <ProtectedRoute>
-              <SOS />
             </ProtectedRoute>
           }
         />

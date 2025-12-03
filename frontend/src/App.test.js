@@ -137,12 +137,6 @@ describe("App Routing", () => {
     expect(screen.getByText(/profile/i)).toBeInTheDocument();
   });
 
-  test("renders SOS page when logged in", () => {
-    useAuth.mockReturnValue({ user: { id: "123" } });
-    renderWithRoute("/sos");
-    expect(screen.getByText(/sos/i)).toBeInTheDocument();
-  });
-
   // 404 PAGE
   test("renders NotFoundPage for unknown route", () => {
     useAuth.mockReturnValue({ user: null });
