@@ -96,7 +96,7 @@ def test_login_user(monkeypatch):
     monkeypatch.setattr(user_repository, "find_by_email",
                         lambda email: {"_id": VALID_ID, "email": email, "password": "secret", "name": "A"})
 
-    monkeypatch.setattr("app.SECRET_KEY", "testkey")
+    monkeypatch.setattr("app.SECRET_KEY", os.getenv("JWT_SECRET_KEY"))
 
     r = client.post("/login", json={"email": "x@test.com", "password": "secret"})
     assert r.status_code == 200
@@ -253,7 +253,7 @@ def test_update_reminder(patch_collections):
 # ===========================================================
 
 def test_jwt_create_and_verify(monkeypatch):
-    monkeypatch.setattr("app.SECRET_KEY", "key123")
+    monkeypatch.setattr("app.SECRET_KEY", os.getenv("JWT_SECRET_KEY"))
 
     token = create_access_token("user1")
     decoded = verify_token(token)
@@ -266,11 +266,11 @@ def test_jwt_invalid_token():
 
 
 def test_jwt_expired(monkeypatch):
-    monkeypatch.setattr("app.SECRET_KEY", "key123")
+    monkeypatch.setattr("app.SECRET_KEY", os.getenv("JWT_SECRET_KEY"))
 
     expired = jwt.encode(
         {"user_id": "u1", "exp": datetime.now(timezone.utc) - timedelta(minutes=1)},
-        "key123",
+        os.getenv("JWT_SECRET_KEY"), 
         algorithm="HS256",
     )
 
