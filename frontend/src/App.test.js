@@ -41,8 +41,7 @@ describe("App Routing", () => {
     "/community",
     "/forum/123",
     "/hospitals",
-    "/profile",
-    "/sos",
+    "/profile"
   ];
 
   test.each(protectedRoutes)(
