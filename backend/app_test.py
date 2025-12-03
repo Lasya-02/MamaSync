@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import jwt
 from datetime import datetime, timedelta, timezone
 from app import create_access_token, verify_token
-
+import os
 from app import app
 
 client = TestClient(app)
