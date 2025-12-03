@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./css/Dashboard.css";
 
-const API = "http://127.0.0.1:8000";
+const apiURL = process.env.REACT_APP_API_URL;
 
 export default function Dashboard() {
   const uuss = sessionStorage.getItem("userdata") || "{}";
@@ -63,7 +63,7 @@ export default function Dashboard() {
   // ----------------------------------------------------------------
   const loadTasks = async () => {
     try {
-      const res = await axios.get(`${API}/tasks`, {
+      const res = await axios.get(`${apiURL}/tasks`, {
         params: { userId, date: today },
       });
 
@@ -88,7 +88,7 @@ export default function Dashboard() {
   const initializeDefaultTasks = async () => {
     try {
       const promises = defaultTasks.map((task) =>
-        axios.post(`${API}/tasks`, {
+        axios.post(`${apiURL}/tasks`, {
           userId,
           date: today,
           emoji: task.emoji,
@@ -111,7 +111,7 @@ export default function Dashboard() {
   // ----------------------------------------------------------------
   const loadWaterIntake = async () => {
     try {
-      const res = await axios.get(`${API}/waterintake`, {
+      const res = await axios.get(`${apiURL}/waterintake`, {
         params: { userId, date: today },
       });
 
@@ -157,7 +157,7 @@ export default function Dashboard() {
     }
 
     try {
-      await axios.post(`${API}/tasks`, {
+      await axios.post(`${apiURL}/tasks`, {
         userId,
         date: today,
         emoji: "📝",
@@ -187,7 +187,7 @@ export default function Dashboard() {
   const toggleComplete = async (task) => {
     try {
       await axios.patch(
-        `${API}/tasks/${task.id}`,
+        `${apiURL}/tasks/${task.id}`,
         { completed: !task.completed },
         { params: { userId, date: today } }
       );
@@ -210,7 +210,7 @@ export default function Dashboard() {
     if (!taskToDelete) return;
 
     try {
-      await axios.delete(`${API}/tasks/${taskToDelete.id}`, {
+      await axios.delete(`${apiURL}/tasks/${taskToDelete.id}`, {
         params: { userId, date: today },
       });
 
@@ -243,7 +243,7 @@ export default function Dashboard() {
       try {
         // Add 250ml (1 glass)
         await axios.patch(
-          `${API}/waterintake/add`,
+          `${apiURL}/waterintake/add`,
           { amount: 250 },
           { params: { userId, date: today } }
         );
@@ -259,7 +259,7 @@ export default function Dashboard() {
       try {
         // Subtract 250ml (1 glass) - negative amount
         await axios.patch(
-          `${API}/waterintake/add`,
+          `${apiURL}/waterintake/add`,
           { amount: -250 },
           { params: { userId, date: today } }
         );

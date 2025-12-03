@@ -20,12 +20,13 @@ export default function Reminder() {
     repeat: "none",
   });
 
+  const apiURL = process.env.REACT_APP_API_URL;
   const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
   const userId = parsedData.name || "TestUser";
   const loadreminder = async () => {
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/getreminder`, {
+      const res = await axios.get(`${apiURL}/getreminder`, {
        params :{ "userId":userId}
       });
       
@@ -145,7 +146,7 @@ export default function Reminder() {
     if (editingId) {
        try {
         await axios.put(
-        `http://127.0.0.1:8000/updatereminder/${editingId}`,
+        `${apiURL}/updatereminder/${editingId}`,
         { userId,
           title: formData.title,
           description: formData.description,
@@ -179,7 +180,7 @@ export default function Reminder() {
 
        try {
         const response = await axios.post(
-          'http://127.0.0.1:8000/createreminder', // Replace with your backend URL
+          `${apiURL}/createreminder`, // Replace with your backend URL
           {
           userId,
           title: formData.title,
@@ -235,7 +236,7 @@ export default function Reminder() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this reminder?")) {
       try {
-      await axios.delete(`http://127.0.0.1:8000/deletereminder/${id}`, {
+      await axios.delete(`${apiURL}/deletereminder/${id}`, {
         params: { userId },
       });
 

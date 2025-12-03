@@ -20,7 +20,7 @@ export default function Register() {
   const [weight, setWeight] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
-
+  const apiURL = process.env.REACT_APP_API_URL;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function Register() {
    try {
 
         const response = await axios.post(
-          'http://127.0.0.1:8000/register', // Replace with your backend URL
+          `${apiURL}/register`, // Replace with your backend URL
           {
             "email": email,
             "name": name,

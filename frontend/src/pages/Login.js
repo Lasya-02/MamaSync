@@ -22,19 +22,6 @@ export default function Login() {
       try {
 
         await login(email, password ); 
-
-      //  const response = await axios.post(
-      //    'http://127.0.0.1:8000/login', // Replace with your backend URL
-      //    {"email":email,"password":password}
-      //  );
-//
-      //  // Assuming your backend returns a JWT token in response.data.token
-      //  const { token } = response.data;
-//
-      //  // Store the token in localStorage
-      //  //localStorage.setItem('userToken', token);
-      //  localStorage.setItem('userdata', JSON.stringify(response.data));
-
         navigate("/dashboard");
       } catch (err) {
         setloginError(err.response?.data?.message || 'Login failed. Invalid credentials.');

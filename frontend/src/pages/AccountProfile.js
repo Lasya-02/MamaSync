@@ -5,7 +5,7 @@ import "./css/Shared.css";
 import axios from "axios";
 
 import { useAuth } from '../contexts/AuthContext'; 
-
+const apiURL = process.env.REACT_APP_API_URL;
 export default function AccountProfile() {
 
     const { logout } = useAuth(); 
@@ -64,14 +64,14 @@ export default function AccountProfile() {
      try {
 
         const response = await axios.put(
-          'http://127.0.0.1:8000/updateprofile', // Replace with your backend URL
+          `${apiURL}/updateprofile`, // Replace with your backend URL
           profile
         );
 
         alert("Profile updated successfully!");
         
         const updateddata = await axios.get(
-          'http://127.0.0.1:8000/user/'+profile['_id'], // Replace with your backend URL
+          `${apiURL}/user/`+profile['_id'], // Replace with your backend URL
           profile
         );     
 

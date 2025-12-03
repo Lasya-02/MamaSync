@@ -10,6 +10,7 @@ export default function CommunityForum() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
+  const apiURL = process.env.REACT_APP_API_URL;
   // Replace with logged-in userId from your auth context
   const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
@@ -17,7 +18,7 @@ export default function CommunityForum() {
 
   useEffect(() => {
     axios
-      .get("http://127.0.0.1:8000/forum")
+      .get(`${apiURL}/forum`)
       .then((res) => setPosts(res.data))
       .catch((err) => console.error(err));
   }, []);
@@ -27,7 +28,7 @@ export default function CommunityForum() {
     const newPost = { title, content, userId };
 
     try {
-      const res = await axios.post("http://127.0.0.1:8000/forum", newPost);
+      const res = await axios.post(`${apiURL}/forum`, newPost);
       setPosts([...posts, res.data]);
       setTitle("");
       setContent("");

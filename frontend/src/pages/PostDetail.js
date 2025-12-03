@@ -13,7 +13,7 @@ export default function PostDetail() {
   const [post, setPost] = useState(location.state || null);
   const [replies, setReplies] = useState([]);
   const [replyContent, setReplyContent] = useState("");
-
+  const apiURL = process.env.REACT_APP_API_URL;
   // Replace with logged-in userId from your auth context
   const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
@@ -23,7 +23,7 @@ export default function PostDetail() {
   useEffect(() => {
     if (!post) {
       axios
-        .get(`http://127.0.0.1:8000/forum/${id}`)
+        .get(`${apiURL}/forum/${id}`)
         .then((res) => setPost(res.data))
         .catch((err) => console.error("Error fetching post:", err));
     }
@@ -32,7 +32,7 @@ export default function PostDetail() {
   // ✅ Fetch replies (axios version)
   useEffect(() => {
     axios
-      .get(`http://127.0.0.1:8000/forum/${id}/replies`)
+      .get(`${apiURL}/forum/${id}/replies`)
       .then((res) => setReplies(res.data))
       .catch((err) => console.error("Error fetching replies:", err));
   }, [id]);
@@ -44,7 +44,7 @@ export default function PostDetail() {
 
     try {
       const res = await axios.post(
-        `http://127.0.0.1:8000/forum/${id}/replies`,
+        `${apiURL}/forum/${id}/replies`,
         newReply
       );
       setReplies([...replies, res.data]);   // update UI

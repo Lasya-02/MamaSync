@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
-
+const apiURL = process.env.REACT_APP_API_URL;
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const token = sessionStorage.getItem('userToken');
@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     try {
 
       const response = await axios.post(
-        'http://127.0.0.1:8000/login', // Replace with your backend URL
+        `${apiURL}/login`, // Replace with your backend URL
         { "email": email, "password": password }
       );
 
