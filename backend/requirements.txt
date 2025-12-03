@@ -9,3 +9,4 @@ httpx
 email-validator
 prometheus-client
 prometheus-fastapi-instrumentator
+pytest-cov
