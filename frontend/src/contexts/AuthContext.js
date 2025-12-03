@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 const apiURL = process.env.REACT_APP_API_URL;
-console.log("API_URL being used:", API_URL);
+console.log("API_URL being used:", apiURL);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
