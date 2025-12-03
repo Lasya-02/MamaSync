@@ -67,6 +67,9 @@ jobs:
       - name: Build frontend
         run: CI=false npm run build
 
+      - name: Run frontend tests
+        run: npm test -- --watch=false --ci --coverage
+
   docker:
     name: Build & Push Docker Images
     needs: [ backend, frontend ]
