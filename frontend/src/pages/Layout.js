@@ -37,9 +37,6 @@ export default function Dashboard() {
             <Link to="/profile" title="Profile">
               <i className="bi bi-person-circle"></i>
             </Link>
-            <Link to="/sos" title="SOS">
-              <i className="bi bi-exclamation-triangle-fill text-danger"></i>
-            </Link>
           </div>
           
         </header>
