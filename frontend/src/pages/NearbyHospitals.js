@@ -5,6 +5,7 @@ export default function Hospitals() {
   const [error, setError] = useState("");
 
   const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
+  
 
   // Blocked keywords
   const blockedWords = ["psychiatry", "psychiatric", "psych", "mental"];
