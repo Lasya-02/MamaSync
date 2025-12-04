@@ -20,11 +20,11 @@ FROM node:20-alpine
 WORKDIR /app
 
 # ✅ Install lightweight static server
-RUN npm install -g serve
+RUN npm install serve
 
 # ✅ Copy build output
 COPY --from=build /app/build ./build
 
 EXPOSE 3000
 
-CMD ["serve", "-s", "build", "-l", "3000"]
+CMD ["npx", "serve", "-s", "build", "-l", "3000"]
