@@ -1,30 +1,44 @@
-# ✅ Build stage
+# -------------------------
+# ✅ Build Stage
+# -------------------------
 FROM node:20 AS build
+
+# Set working directory
 WORKDIR /app
 
+# Copy package files and install dependencies
 COPY package.json package-lock.json ./
 RUN npm ci
+
+# Copy all source files
 COPY . .
 
+# -------------------------
+# ✅ Build-time Arguments
+# -------------------------
+# Accept API URL and Google Maps API Key from GitHub Actions
 ARG REACT_APP_API_URL
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 ARG REACT_APP_GOOGLE_MAPS_API_KEY
 ENV REACT_APP_GOOGLE_MAPS_API_KEY=$REACT_APP_GOOGLE_MAPS_API_KEY
 
+# Build React app with production env variables
 RUN npm run build
 
+# -------------------------
+# ✅ Production Stage (Nginx)
+# -------------------------
+FROM nginx:alpine
 
-# ✅ Production stage (NO NGINX)
-FROM node:20-alpine
-WORKDIR /app
+# Remove default Nginx static files
+RUN rm -rf /usr/share/nginx/html/*
 
-# ✅ Install lightweight static server
-RUN npm install serve
+# Copy React build output from build stage
+COPY --from=build /app/build /usr/share/nginx/html
 
-# ✅ Copy build output
-COPY --from=build /app/build ./build
+# Expose port 80
+EXPOSE 80
 
-EXPOSE 3000
-
-CMD ["npx", "serve", "-s", "build", "-l", "3000"]
+# Start Nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
