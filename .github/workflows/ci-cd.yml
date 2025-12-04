@@ -245,3 +245,9 @@ jobs:
             git pull origin main
             docker compose pull
             docker compose up -d --force-recreate --build
+            
+            echo "====== BACKEND LOGS ======"
+            docker logs mamasync-backend --tail 200
+
+            echo "====== RUNNING CONTAINERS ======"
+            docker ps
