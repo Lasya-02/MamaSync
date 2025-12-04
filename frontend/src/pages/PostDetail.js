@@ -17,7 +17,8 @@ export default function PostDetail() {
   // Replace with logged-in userId from your auth context
   const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
-  const userId = parsedData.name || "TestUser";
+  const userId = parsedData.email || "TestUser";
+  const userName = parsedData.name || "TestUser";
 
   // ✅ Fetch post if not passed in state (axios version)
   useEffect(() => {
@@ -62,7 +63,7 @@ export default function PostDetail() {
         <div className="card-body">
           <h2 className="mb-3">{post.title}</h2>
           <p>{post.content}</p>
-          <p><strong>Posted by:</strong> {post.userId}</p>
+          <p><strong>Posted by:</strong> {userName}</p>
           <small className="text-muted">
             {dayjs(post.created_at).local().format("MMM D, YYYY h:mm A")}
           </small>
@@ -77,7 +78,7 @@ export default function PostDetail() {
               {replies.map((reply) => (
                 <div key={reply.id} className="list-group-item reply-card">
                   <p className="text-muted">
-                    <strong>{reply.userId}</strong>: {reply.content}
+                    <strong>{userName}</strong>: {reply.content}
                   </p>
                   <small className="text-muted">
                     {dayjs(reply.created_at).local().format("MMM D, YYYY h:mm A")}

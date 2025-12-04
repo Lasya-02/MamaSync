@@ -7,7 +7,7 @@ const apiURL = process.env.REACT_APP_API_URL;
 export default function Dashboard() {
   const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
-  const userId = parsedData.name || "TestUser";
+  const userId = parsedData.email || "TestUser";
 
   const today = new Date().toISOString().split("T")[0];
 

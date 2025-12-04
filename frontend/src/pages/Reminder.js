@@ -23,7 +23,7 @@ export default function Reminder() {
   const apiURL = process.env.REACT_APP_API_URL;
   const uuss = sessionStorage.getItem("userdata") || "{}";
   const parsedData = JSON.parse(uuss);
-  const userId = parsedData.name || "TestUser";
+  const userId = parsedData.email || "TestUser";
   const loadreminder = async () => {
     try {
       const res = await axios.get(`${apiURL}/getreminder`, {
