@@ -82,11 +82,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build backend image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-backend:latest backend
+        run: docker build --no-cache -t ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-backend:latest backend
 
       - name: Build frontend image
         run: |
-          docker build \
+          docker build --no-cache \
           --build-arg REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }} \
           --build-arg REACT_APP_GOOGLE_MAPS_API_KEY=${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }} \
           -t ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-frontend:latest frontend
@@ -244,4 +244,4 @@ jobs:
 
             git pull origin main
             docker compose pull
-            docker compose up --force-recreate -d
+            docker compose up -d --force-recreate --build
