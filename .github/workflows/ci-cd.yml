@@ -246,12 +246,18 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            docker compose down
+
+            docker rmi -f ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-frontend:latest || true
+            docker rmi -f ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-backend:latest || true
+
             # Clean old Docker data
             docker system prune -a -f
             docker volume prune -f
 
             # Pull latest images and rebuild
-            docker compose pull
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-backend:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-frontend:latest
             docker compose up -d --force-recreate --build
 
             # Logs and running containers
@@ -259,3 +265,4 @@ jobs:
             docker logs mamasync-backend --tail 200
             echo "====== RUNNING CONTAINERS ======"
             docker ps
+            
