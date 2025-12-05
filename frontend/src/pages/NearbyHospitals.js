@@ -5,7 +5,8 @@ export default function Hospitals() {
   const [error, setError] = useState("");
 
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-  
+  console.log("ENV CHECK:", process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
+
 
   // Blocked keywords
   const blockedWords = ["psychiatry", "psychiatric", "psych", "mental"];
