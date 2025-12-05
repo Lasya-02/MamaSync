@@ -90,6 +90,7 @@ jobs:
           --build-arg REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }} \
           --build-arg REACT_APP_GOOGLE_MAPS_API_KEY=${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }} \
           -t ${{ secrets.DOCKERHUB_USERNAME }}/mamasync-frontend:latest frontend
+          docker run --rm <frontend_image> sh -c 'echo $REACT_APP_GOOGLE_MAPS_API_KEY'
 
       - name: Run backend container for testing
         run: |
