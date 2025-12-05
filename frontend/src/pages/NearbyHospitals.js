@@ -3,10 +3,9 @@ import React, { useEffect, useState } from "react";
 export default function Hospitals() {
   const [hospitals, setHospitals] = useState([]);
   const [error, setError] = useState("");
+  const [address, setAddress] = useState("");
 
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-  console.log("ENV CHECK:", process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
-
 
   // Blocked keywords
   const blockedWords = ["psychiatry", "psychiatric", "psych", "mental"];
