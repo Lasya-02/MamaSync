@@ -3,9 +3,9 @@ import React, { useEffect, useState } from "react";
 export default function Hospitals() {
   const [hospitals, setHospitals] = useState([]);
   const [error, setError] = useState("");
+  const [address, setAddress] = useState("");
 
   const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
-  
 
   // Blocked keywords
   const blockedWords = ["psychiatry", "psychiatric", "psych", "mental"];
@@ -30,9 +30,12 @@ export default function Hospitals() {
     document.body.appendChild(script);
   };
 
-  // ✅ New Places API — Nearby Search
+  // ✅ Fetch hospitals using Places API
   const fetchNearbyHospitals = async (location, mapObj) => {
     try {
+      setError("");
+      setHospitals([]);
+
       const response = await fetch(
         "https://places.googleapis.com/v1/places:searchNearby",
         {
@@ -40,8 +43,7 @@ export default function Hospitals() {
           headers: {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": apiKey,
-            "X-Goog-FieldMask":
-              "places.id,places.displayName,places.location",
+            "X-Goog-FieldMask": "places.id,places.displayName,places.location",
           },
           body: JSON.stringify({
             includedTypes: ["hospital"],
@@ -60,7 +62,7 @@ export default function Hospitals() {
       );
 
       const data = await response.json();
-      if (!data.places) {
+      if (!data.places || !data.places.length) {
         setError("No hospitals found nearby.");
         return;
       }
@@ -71,11 +73,9 @@ export default function Hospitals() {
         const name = place.displayName?.text;
         if (!name || isBlocked(name)) continue;
 
-        // ✅ Fetch details for each hospital
         const detailsRes = await fetch(
           `https://places.googleapis.com/v1/places/${place.id}?fields=displayName,formattedAddress,internationalPhoneNumber,location&key=${apiKey}`
         );
-
         const details = await detailsRes.json();
 
         selected.push({
@@ -86,7 +86,7 @@ export default function Hospitals() {
           location: details.location,
         });
 
-        // ✅ Add marker using FREE legacy Marker (no billing, no Map ID)
+        // Add marker on map
         if (mapObj && details.location) {
           new window.google.maps.Marker({
             map: mapObj,
@@ -108,39 +108,65 @@ export default function Hospitals() {
     }
   };
 
+  // ✅ Initialize Google Maps script
   useEffect(() => {
-    loadMapsScript(() => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const userLocation = {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-            };
-
-            const mapObj = new window.google.maps.Map(
-              document.getElementById("map"),
-              {
-                center: userLocation,
-                zoom: 14,
-              }
-            );
-
-            // ✅ Pass mapObj directly (fixes marker timing issue)
-            fetchNearbyHospitals(userLocation, mapObj);
-          },
-          () => setError("Please allow location access.")
-        );
-      } else {
-        setError("Geolocation not supported.");
-      }
-    });
+    loadMapsScript(() => {});
   }, []);
+
+  // ✅ Handle manual search
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!address) return;
+
+    try {
+      setError("");
+      setHospitals([]);
+
+      // Geocode user input
+      const res = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          address
+        )}&key=${apiKey}`
+      );
+      const data = await res.json();
+      if (data.status !== "OK" || !data.results.length) {
+        setError("Address not found.");
+        return;
+      }
+
+      const loc = data.results[0].geometry.location;
+
+      const mapObj = new window.google.maps.Map(
+        document.getElementById("map"),
+        {
+          center: loc,
+          zoom: 14,
+        }
+      );
+
+      fetchNearbyHospitals(loc, mapObj);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch location.");
+    }
+  };
 
   return (
     <div className="page-container" style={{ color: "white" }}>
       <h2>🏥 Nearby Hospitals</h2>
       <p>Find trusted hospitals and clinics near your location.</p>
+
+      {/* Manual input */}
+      <form onSubmit={handleSearch} style={{ marginBottom: "20px" }}>
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Enter your address or ZIP code"
+          style={{ padding: "5px", width: "250px", marginRight: "10px" }}
+        />
+        <button type="submit">Search</button>
+      </form>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
