@@ -4,7 +4,7 @@ export default function Hospitals() {
   const [hospitals, setHospitals] = useState([]);
   const [error, setError] = useState("");
 
-  const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
+  const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
   
 
   // Blocked keywords
