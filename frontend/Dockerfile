@@ -27,14 +27,18 @@ ENV REACT_APP_GOOGLE_MAPS_API_KEY=$REACT_APP_GOOGLE_MAPS_API_KEY
 RUN npm run build
 
 # -------------------------
-# ✅ Production Stage (Apache HTTP Server) - UPDATED
+# ✅ Production Stage (Nginx)
 # -------------------------
-FROM httpd:alpine
+FROM nginx:alpine
 
-# Copy React build output from build stage to Apache's default web root
-COPY --from=build /app/build /usr/local/apache2/htdocs/
+# Remove default Nginx static files
+RUN rm -rf /usr/share/nginx/html/*
 
-# Expose port 80 (Apache listens on this by default)
+# Copy React build output from build stage
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expose port 80
 EXPOSE 80
 
-# Apache starts automatically by default
+# Start Nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
