@@ -137,9 +137,27 @@ export default function Dashboard() {
     }
   };
 
+  // ----------------------------------------------------------------
+  // LOAD MOOD
+  // ----------------------------------------------------------------
+  const loadMood = async () => {
+    try {
+      const res = await axios.get(`${apiURL}/mood`, {
+        params: { userId, date: today },
+      });
+      
+      if (res.data.data) {
+        setCurrentMood(res.data.data.mood);
+      }
+    } catch (e) {
+      console.error("Error loading mood:", e);
+    }
+  };
+
   useEffect(() => {
     loadTasks();
     loadWaterIntake();
+    loadMood();
   }, []);
 
   // ----------------------------------------------------------------
@@ -231,8 +249,19 @@ export default function Dashboard() {
   // ----------------------------------------------------------------
   // HANDLE MOOD SELECTION
   // ----------------------------------------------------------------
-  const handleMoodSelect = (moodValue) => {
-    setCurrentMood(moodValue);
+  const handleMoodSelect = async (moodValue) => {
+    try {
+      await axios.post(`${apiURL}/mood`, {
+        userId,
+        date: today,
+        mood: moodValue,
+      });
+      setCurrentMood(moodValue);
+    } catch (e) {
+      console.error("Error saving mood:", e);
+      // Still update UI even if save fails
+      setCurrentMood(moodValue);
+    }
   };
 
   // ----------------------------------------------------------------

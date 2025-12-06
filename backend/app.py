@@ -17,6 +17,7 @@ from userrepository import user_repository
 from datetime import date, time
 from dailytaskrepository import dailytask_repository
 from waterintakerepository import waterintake_repository
+from moodrepository import mood_repository
 import jwt
 from datetime import datetime, timedelta, timezone
 
@@ -47,6 +48,7 @@ forum_collection = mongo_db.get_collection("forum_posts")
 reminder_collection = mongo_db.get_collection("reminder")
 guide_collection = mongo_db.get_collection("guide")
 waterintake_collection = mongo_db.get_collection("water_intake")
+mood_collection = mongo_db.get_collection("mood_tracking")
 
     
 
@@ -110,6 +112,11 @@ class WaterIntakeData(BaseModel):
 
 class WaterIntakeUpdate(BaseModel):
     amount: int  # amount to add in ml
+
+class MoodData(BaseModel):
+    userId: str
+    date: str  # "YYYY-MM-DD"
+    mood: str  # "happy", "calm", "tired", "anxious", "unwell"
 
 # ---------- HELPERS ----------
 def build_task_dict(task: TaskCreate) -> dict:
@@ -648,6 +655,98 @@ def delete_water_intake(userId: str, date: str):
         raise HTTPException(status_code=404, detail="Water intake record not found")
     
     return {"message": "Water intake record deleted"}
+
+# ---------- MOOD TRACKING ROUTES ----------
+
+@app.post("/mood", status_code=201)
+def create_mood(mood: MoodData):
+    """
+    Save or update mood for a user on a specific date.
+    If mood already exists for that date, update it.
+    """
+    # Validate mood value
+    valid_moods = ["happy", "calm", "tired", "anxious", "unwell"]
+    if mood.mood not in valid_moods:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid mood value. Must be one of: {', '.join(valid_moods)}"
+        )
+    
+    existing = mood_repository.find_by_user_and_date(mood.userId, mood.date)
+    
+    if existing:
+        # Update existing mood
+        success = mood_repository.update(mood.userId, mood.date, mood.mood)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update mood")
+        updated = mood_repository.find_by_user_and_date(mood.userId, mood.date)
+        return {"message": "Mood updated", "data": updated}
+    else:
+        # Create new mood entry
+        mood_dict = mood.model_dump()
+        mood_id = mood_repository.create(mood_dict)
+        mood_dict["_id"] = mood_id
+        return {"message": "Mood saved", "data": mood_dict}
+
+
+@app.get("/mood")
+def get_mood(userId: str, date: Optional[str] = None):
+    """
+    Get mood data for a user.
+    If date is provided, get mood for that specific date.
+    If date is not provided, get all mood history (last 30 days).
+    """
+    if date:
+        mood = mood_repository.find_by_user_and_date(userId, date)
+        if not mood:
+            return {"data": None}
+        return {"data": mood}
+    else:
+        moods = mood_repository.find_by_user(userId, limit=30)
+        return {"data": moods}
+
+
+@app.put("/mood")
+def update_mood(mood: MoodData):
+    """
+    Update mood value for a specific user and date.
+    """
+    # Validate mood value
+    valid_moods = ["happy", "calm", "tired", "anxious", "unwell"]
+    if mood.mood not in valid_moods:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid mood value. Must be one of: {', '.join(valid_moods)}"
+        )
+    
+    existing = mood_repository.find_by_user_and_date(mood.userId, mood.date)
+    
+    if not existing:
+        raise HTTPException(
+            status_code=404,
+            detail="Mood entry not found for this date"
+        )
+    
+    success = mood_repository.update(mood.userId, mood.date, mood.mood)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update mood")
+    
+    updated = mood_repository.find_by_user_and_date(mood.userId, mood.date)
+    return {"message": "Mood updated", "data": updated}
+
+
+@app.delete("/mood")
+def delete_mood(userId: str, date: str):
+    """
+    Delete mood entry for a specific date.
+    """
+    success = mood_repository.delete(userId, date)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Mood entry not found")
+    
+    return {"message": "Mood entry deleted"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
