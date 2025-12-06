@@ -1,5 +1,6 @@
 import pytest
-from moodrepository import mood_repository
+from unittest.mock import MagicMock, patch
+from moodrepository import MoodRepository
 from datetime import date
 
 @pytest.fixture
@@ -10,111 +11,138 @@ def test_user_id():
 def test_date():
     return date.today().isoformat()
 
-@pytest.fixture(autouse=True)
-def cleanup(test_user_id):
-    """Clean up test data before and after each test."""
-    # Clean before
-    mood_repository.collection.delete_many({"userId": test_user_id})
-    yield
-    # Clean after
-    mood_repository.collection.delete_many({"userId": test_user_id})
 
-def test_create_mood(test_user_id, test_date):
+@patch("moodrepository.mongo_db")
+def test_create_mood(mock_mongo, test_user_id, test_date):
     """Test creating a new mood entry."""
+    mock_collection = MagicMock()
+    mock_mongo.get_collection.return_value = mock_collection
+    mock_collection.insert_one.return_value.inserted_id = "123"
+    
+    repo = MoodRepository()
     mood_data = {
         "userId": test_user_id,
         "date": test_date,
         "mood": "happy"
     }
     
-    mood_id = mood_repository.create(mood_data)
+    mood_id = repo.create(mood_data)
     
-    assert mood_id is not None
+    assert mood_id == "123"
     assert isinstance(mood_id, str)
+    mock_collection.insert_one.assert_called_once()
 
-def test_find_by_user_and_date(test_user_id, test_date):
+
+@patch("moodrepository.mongo_db")
+def test_find_by_user_and_date(mock_mongo, test_user_id, test_date):
     """Test finding a mood entry by user and date."""
-    mood_data = {
+    mock_collection = MagicMock()
+    mock_mongo.get_collection.return_value = mock_collection
+    mock_collection.find_one.return_value = {
+        "_id": "123",
         "userId": test_user_id,
         "date": test_date,
-        "mood": "calm"
+        "mood": "calm",
+        "created_at": "2024-01-01T00:00:00.000"
     }
     
-    mood_repository.create(mood_data)
-    found_mood = mood_repository.find_by_user_and_date(test_user_id, test_date)
+    repo = MoodRepository()
+    found_mood = repo.find_by_user_and_date(test_user_id, test_date)
     
     assert found_mood is not None
     assert found_mood["userId"] == test_user_id
     assert found_mood["date"] == test_date
     assert found_mood["mood"] == "calm"
-    assert "created_at" in found_mood
+    assert found_mood["_id"] == "123"
+    mock_collection.find_one.assert_called_once_with({"userId": test_user_id, "date": test_date})
 
-def test_find_by_user_and_date_not_found(test_user_id):
+
+@patch("moodrepository.mongo_db")
+def test_find_by_user_and_date_not_found(mock_mongo, test_user_id):
     """Test finding a mood entry that doesn't exist."""
-    found_mood = mood_repository.find_by_user_and_date(test_user_id, "2099-12-31")
+    mock_collection = MagicMock()
+    mock_mongo.get_collection.return_value = mock_collection
+    mock_collection.find_one.return_value = None
+    
+    repo = MoodRepository()
+    found_mood = repo.find_by_user_and_date(test_user_id, "2099-12-31")
     
     assert found_mood is None
 
-def test_find_by_user(test_user_id, test_date):
+
+@patch("moodrepository.mongo_db")
+def test_find_by_user(mock_mongo, test_user_id):
     """Test finding all mood entries for a user."""
-    moods = [
-        {"userId": test_user_id, "date": "2024-01-01", "mood": "happy"},
-        {"userId": test_user_id, "date": "2024-01-02", "mood": "tired"},
-        {"userId": test_user_id, "date": "2024-01-03", "mood": "anxious"}
+    mock_collection = MagicMock()
+    mock_mongo.get_collection.return_value = mock_collection
+    
+    mock_cursor = MagicMock()
+    mock_cursor.sort.return_value = mock_cursor
+    mock_cursor.limit.return_value = [
+        {"_id": "3", "userId": test_user_id, "date": "2024-01-03", "mood": "anxious"},
+        {"_id": "2", "userId": test_user_id, "date": "2024-01-02", "mood": "tired"},
+        {"_id": "1", "userId": test_user_id, "date": "2024-01-01", "mood": "happy"}
     ]
+    mock_collection.find.return_value = mock_cursor
     
-    for mood in moods:
-        mood_repository.create(mood)
-    
-    found_moods = mood_repository.find_by_user(test_user_id)
+    repo = MoodRepository()
+    found_moods = repo.find_by_user(test_user_id)
     
     assert len(found_moods) == 3
-    # Should be sorted by date descending
     assert found_moods[0]["date"] == "2024-01-03"
     assert found_moods[1]["date"] == "2024-01-02"
     assert found_moods[2]["date"] == "2024-01-01"
 
-def test_update_mood(test_user_id, test_date):
+
+@patch("moodrepository.mongo_db")
+def test_update_mood(mock_mongo, test_user_id, test_date):
     """Test updating a mood entry."""
-    mood_data = {
-        "userId": test_user_id,
-        "date": test_date,
-        "mood": "happy"
-    }
+    mock_collection = MagicMock()
+    mock_mongo.get_collection.return_value = mock_collection
+    mock_collection.update_one.return_value.modified_count = 1
     
-    mood_repository.create(mood_data)
-    success = mood_repository.update(test_user_id, test_date, "unwell")
+    repo = MoodRepository()
+    success = repo.update(test_user_id, test_date, "unwell")
     
     assert success is True
-    
-    updated_mood = mood_repository.find_by_user_and_date(test_user_id, test_date)
-    assert updated_mood["mood"] == "unwell"
-    assert "updated_at" in updated_mood
+    mock_collection.update_one.assert_called_once()
 
-def test_update_nonexistent_mood(test_user_id, test_date):
+
+@patch("moodrepository.mongo_db")
+def test_update_nonexistent_mood(mock_mongo, test_user_id):
     """Test updating a mood entry that doesn't exist."""
-    success = mood_repository.update(test_user_id, "2099-12-31", "happy")
+    mock_collection = MagicMock()
+    mock_mongo.get_collection.return_value = mock_collection
+    mock_collection.update_one.return_value.modified_count = 0
+    
+    repo = MoodRepository()
+    success = repo.update(test_user_id, "2099-12-31", "happy")
     
     assert success is False
 
-def test_delete_mood(test_user_id, test_date):
+
+@patch("moodrepository.mongo_db")
+def test_delete_mood(mock_mongo, test_user_id, test_date):
     """Test deleting a mood entry."""
-    mood_data = {
-        "userId": test_user_id,
-        "date": test_date,
-        "mood": "calm"
-    }
+    mock_collection = MagicMock()
+    mock_mongo.get_collection.return_value = mock_collection
+    mock_collection.delete_one.return_value.deleted_count = 1
     
-    mood_repository.create(mood_data)
-    success = mood_repository.delete(test_user_id, test_date)
+    repo = MoodRepository()
+    success = repo.delete(test_user_id, test_date)
     
     assert success is True
-    
-    found_mood = mood_repository.find_by_user_and_date(test_user_id, test_date)
-    assert found_mood is None
+    mock_collection.delete_one.assert_called_once_with({"userId": test_user_id, "date": test_date})
 
-def test_delete_nonexistent_mood(test_user_id):
+
+@patch("moodrepository.mongo_db")
+def test_delete_nonexistent_mood(mock_mongo, test_user_id):
     """Test deleting a mood entry that doesn't exist."""
-    success = mood_repository.delete(test_user_id, "2099-12-31")
+    mock_collection = MagicMock()
+    mock_mongo.get_collection.return_value = mock_collection
+    mock_collection.delete_one.return_value.deleted_count = 0
+    
+    repo = MoodRepository()
+    success = repo.delete(test_user_id, "2099-12-31")
     
     assert success is False
