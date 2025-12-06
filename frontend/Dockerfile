@@ -34,6 +34,9 @@ FROM nginx:alpine
 # Remove default Nginx static files
 RUN rm -rf /usr/share/nginx/html/*
 
+# Copy your custom configuration file to Nginx's configuration directory
+COPY nginx.conf /etc/nginx/nginx.conf
+
 # Copy React build output from build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
