@@ -132,7 +132,7 @@ jobs:
     - name: Authenticate Snyk
       run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-    # ✅ Install backend dependencies so Snyk can resolve imports
+    # Install backend dependencies so Snyk can resolve imports
     - name: Install backend dependencies
       working-directory: backend
       run: |
@@ -178,13 +178,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ✅ SEMGREP
+      # SEMGREP
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1
         with:
           config: "p/ci"
 
-      # ✅ BANDIT
+      # BANDIT
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -201,7 +201,7 @@ jobs:
         working-directory: backend
         run: bandit -r . -c bandit.yaml
 
-      # ✅ ESLINT SECURITY
+      # ESLINT SECURITY
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

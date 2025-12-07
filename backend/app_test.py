@@ -10,9 +10,8 @@ from app import app
 
 client = TestClient(app)
 
-# -----------------------------------------------------------
+
 # Shared Mock Collection used for all database interactions
-# -----------------------------------------------------------
 
 class MockCollection:
     """A simple mock collection that simulates MongoDB behavior."""
@@ -48,9 +47,9 @@ class MockCollection:
 
 VALID_ID = str(ObjectId())
 
-# -----------------------------------------------------------
+
 # Replace all Mongo collection objects in app.py
-# -----------------------------------------------------------
+
 
 @pytest.fixture(autouse=True)
 def patch_collections(monkeypatch):
@@ -63,18 +62,17 @@ def patch_collections(monkeypatch):
 
     return fake
 
-# -----------------------------------------------------------
 # JWT Fixture for Authenticated Requests
-# -----------------------------------------------------------
+
 
 @pytest.fixture
 def auth_header():
     token = create_access_token("test_user")
     return {"Authorization": f"Bearer {token}"}
 
-# ===========================================================
-#                     USER TESTS
-# ===========================================================
+
+# USER TESTS
+
 
 def test_register_user(monkeypatch):
     from userrepository import user_repository
@@ -140,9 +138,9 @@ def test_update_profile(monkeypatch, auth_header):
     r = client.put("/updateprofile", json=payload, headers=auth_header)
     assert r.status_code == 200
 
-# ===========================================================
-#                     TASKS TESTS
-# ===========================================================
+
+# TASKS TESTS
+
 
 def test_create_task(patch_collections, auth_header):
     patch_collections.find_one_result = None
@@ -192,9 +190,9 @@ def test_update_task_no_field(auth_header):
     r = client.patch("/tasks/t1?userId=u1&date=d1", json={}, headers=auth_header)
     assert r.status_code == 400
 
-# ===========================================================
-#                     FORUM TESTS
-# ===========================================================
+
+# FORUM TESTS
+
 
 def test_create_forum_post(patch_collections, auth_header):
     r = client.post("/forum", json={"userId": "u1", "title": "Hello", "content": "World"}, headers=auth_header)
@@ -241,9 +239,9 @@ def test_get_posts_empty(monkeypatch, auth_header):
     assert r.status_code == 200
     assert r.json() == []
 
-# ===========================================================
-#                     GUIDE TESTS
-# ===========================================================
+
+# GUIDE TESTS
+
 
 def test_get_guides(patch_collections, auth_header):
     patch_collections.find_result = [{"_id": VALID_ID, "title": "Guide"}]
@@ -261,9 +259,9 @@ def test_get_guide_not_found(monkeypatch, auth_header):
     r = client.get(f"/guide/{valid}", headers=auth_header)
     assert r.status_code == 404
 
-# ===========================================================
-#                   REMINDER TESTS
-# ===========================================================
+
+# REMINDER TESTS
+
 
 def test_create_reminder(patch_collections, auth_header):
     patch_collections.find_one_result = None
@@ -324,9 +322,9 @@ def test_delete_reminder_not_found(patch_collections, auth_header):
     r = client.delete("/deletereminder/x?userId=u1", headers=auth_header)
     assert r.status_code == 404
 
-# ===========================================================
-#              MORE TESTS FOR HIGHER COVERAGE (JWT)
-# ===========================================================
+
+# MORE TESTS FOR HIGHER COVERAGE (JWT)
+
 
 def test_jwt_create_and_verify(monkeypatch):
     monkeypatch.setattr("app.SECRET_KEY", os.getenv("JWT_SECRET_KEY"))
@@ -363,9 +361,8 @@ def test_jwt_expired(monkeypatch):
 
     assert result is None
 
-# ===========================================================
-#                WATER INTAKE TESTS
-# ===========================================================
+# WATER INTAKE TESTS
+
 
 def test_waterintake_new_day(monkeypatch, auth_header):
     fake_repo = MagicMock()
