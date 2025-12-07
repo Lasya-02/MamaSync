@@ -105,7 +105,7 @@ def test_register_user(monkeypatch):
 def test_login_user(monkeypatch):
     from userrepository import user_repository
     monkeypatch.setattr(user_repository, "find_by_email",
-                        lambda email: {"_id": VALID_ID, "email": email, "password": "secret", "name": "A", "age":30})
+                        lambda email: {"_id": VALID_ID, "email": email, "password": "secret", "name": "A", "age":30, "height":160, "weight":55, "pregnancyMonth":4, "working":True})
 
     monkeypatch.setattr("app.SECRET_KEY", os.getenv("JWT_SECRET_KEY"))
 
@@ -146,15 +146,13 @@ def test_update_profile(monkeypatch, auth_header):
 
 def test_create_task(patch_collections, auth_header):
     patch_collections.find_one_result = None
-    r = client.put("/tasks", json={
-        "userId": "u1",
-        "date": "d1",
+    r = client.post("/tasks/u1/d1", [{
         "emoji": "🙂",
         "title": "Test",
         "time": "10:00",
         "completed": False,
         "isPreset": False
-    }, headers=auth_header)
+    }], headers=auth_header)
     assert r.status_code == 200
 
 
