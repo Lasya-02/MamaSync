@@ -146,13 +146,21 @@ def test_update_profile(monkeypatch, auth_header):
 
 def test_create_task(patch_collections, auth_header):
     patch_collections.find_one_result = None
-    r = client.post("/tasks/u1/d1", [{
-        "emoji": "🙂",
-        "title": "Test",
-        "time": "10:00",
-        "completed": False,
-        "isPreset": False
-    }], headers=auth_header)
+    r = client.post(
+        "/tasks/u1/d1",
+        json={   
+            "tasks": [  
+                {
+                    "emoji": "🙂",
+                    "title": "Test",
+                    "time": "10:00",
+                    "completed": False,
+                    "isPreset": False
+                }
+            ]
+        },
+        headers=auth_header
+    )
     assert r.status_code == 200
 
 
