@@ -105,7 +105,7 @@ def test_register_user(monkeypatch):
 def test_login_user(monkeypatch):
     from userrepository import user_repository
     monkeypatch.setattr(user_repository, "find_by_email",
-                        lambda email: {"_id": VALID_ID, "email": email, "password": "secret", "name": "A", "age"":30})
+                        lambda email: {"_id": VALID_ID, "email": email, "password": "secret", "name": "A", "age":30})
 
     monkeypatch.setattr("app.SECRET_KEY", os.getenv("JWT_SECRET_KEY"))
 
