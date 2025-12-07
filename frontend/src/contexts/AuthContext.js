@@ -35,7 +35,17 @@ export const AuthProvider = ({ children }) => {
 
           sessionStorage.setItem('authToken', response.data.token);
           sessionStorage.setItem('userdata', JSON.stringify(response.data.user));
+          const storedToken = sessionStorage.getItem('authToken');
+          const storedUser = sessionStorage.getItem('userdata');
 
+          if (storedToken && storedUser) {
+            try {
+              setUser(JSON.parse(storedUser));
+            } catch (error) {
+              console.error("Error parsing user data from session storage:", error);
+              logout(); 
+            }
+          }
       } catch (error) {
         console.error("Login failed:", error);
         throw error; 
