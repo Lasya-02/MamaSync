@@ -6,15 +6,21 @@ export default function Guide() {
   const [documents, setDocuments] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
+  const loadGuides = async () => {
     try {
-      const res =  apiClient.get(`/guide`);
-      if(res.data){
-      setDocuments(res.data.documents)}
+      const res = await apiClient.get("/guide");   // ✅ await is now valid
+      if (res.data) {
+        setDocuments(res.data.documents);
+      }
     } catch (e) {
       console.error("Error loading tasks:", e);
-    } 
-  }, []);
+    }
+  };
+
+  loadGuides();  
+}, []);
+
 
   const loadDocument = async (id) => {
     try {
