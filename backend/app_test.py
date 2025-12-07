@@ -93,7 +93,8 @@ def test_register_user(monkeypatch):
         "emergencyContact": "123",
         "dueDate": "2025-12-01",
         "height": 160,
-        "weight": 55
+        "weight": 55,
+        "age": 30
     }
 
     r = client.post("/register", json=payload)
@@ -132,7 +133,8 @@ def test_update_profile(monkeypatch, auth_header):
         "emergencyContact": "123",
         "dueDate": "2025-12-01",
         "height": 160,
-        "weight": 55
+        "weight": 55,
+        "age": 30
     }
 
     r = client.put("/updateprofile", json=payload, headers=auth_header)
