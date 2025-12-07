@@ -138,7 +138,7 @@ export default function Register() {
       setFormError(errduedate)
     }
 
-    if(formError=''){
+    if(formError==''){
     try {
 
         const response = await apiClient.post(
