@@ -146,7 +146,7 @@ def find_doc(user_id: str, date: str):
 def create_access_token(user_id: int):
     """Generates a JWT token that expires in 30 minutes."""
     to_encode = {"user_id": user_id}
-    expire = datetime.now(timezone.utc) + timedelta(minutes=1)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=5)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
