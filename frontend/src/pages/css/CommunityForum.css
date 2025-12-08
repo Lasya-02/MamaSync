@@ -14,6 +14,9 @@ html, body {
   overflow-x: hidden;
 }
 
+.text-muted {
+  color: black !important;
+}
 
 .card {
   background-color: #000000; 
@@ -33,12 +36,14 @@ html, body {
 
 
 .forum-card:hover {
-  background-color: #000000; 
-  color: #eb8cac;            
+  background-color: #000000;
   transform: scale(1.01);
-  border: none;  
+  border: none;
 }
 
+.forum-card:hover * {
+  color: #000000 !important;
+}
 
 form input.form-control,
 form textarea.form-control {
